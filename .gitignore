@@ -1,0 +1,30 @@
+# --- Composer & Dependencies ---
+/vendor/
+/web/core/
+/web/modules/contrib/
+/web/themes/contrib/
+/web/profiles/contrib/
+/web/libraries/
+/drush/contrib/
+
+# --- Drupal Configuration & Files ---
+/web/sites/*/settings.local.php
+/web/sites/*/files/
+/web/sites/simpletest
+
+# --- DDEV Specifics ---
+# DDEV generates its own .gitignore inside the .ddev folder;
+# do not commit the inner .ddev/.gitignore.
+.ddev/.gitignore
+
+# If you use DDEV-generated settings files
+/web/sites/*/settings.ddev.php
+
+# --- Sensitive Environment Files ---
+.env
+.env.local
+
+# --- IDE & OS Files ---
+.idea/
+.vscode/
+.DS_Store
