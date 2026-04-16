@@ -1,0 +1,17 @@
+uuid: 23d46580-0d18-465d-aaf9-25db2c4ff7da
+langcode: en
+status: true
+dependencies:
+  module:
+    - menu_ui
+third_party_settings:
+  menu_ui:
+    available_menus: {  }
+    parent: ''
+name: Project
+type: project
+description: 'A container for projects'
+help: null
+new_revision: false
+preview_mode: 1
+display_submitted: false
