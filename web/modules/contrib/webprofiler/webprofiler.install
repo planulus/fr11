@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file
+ * Drupal Webprofiler.
+ */
+use Drupal\Core\PhpStorage\PhpStorageFactory;
+
+/**
+ * Clear old config entity storage decorators.
+ */
+function webprofiler_update_8001(): void {
+  $storage = PhpStorageFactory::get('webprofiler');
+  $storage->deleteAll();
+}
+
+/**
+ * Set the default value for the exclude_toolbar setting.
+ */
+function webprofiler_update_8002(): void {
+  \Drupal::configFactory()
+    ->getEditable('webprofiler.settings')
+    ->set('exclude_toolbar', '/media/oembed')
+    ->save();
+}
+
+/**
+ * Set the default value for the query_detailed_output_threshold setting.
+ */
+function webprofiler_update_8003(): void {
+  \Drupal::configFactory()
+    ->getEditable('webprofiler.settings')
+    ->set('query_detailed_output_threshold', 1000)
+    ->save();
+}

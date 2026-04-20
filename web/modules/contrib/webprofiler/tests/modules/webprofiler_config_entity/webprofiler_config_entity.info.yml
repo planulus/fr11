@@ -1,0 +1,12 @@
+name: 'Webprofiler config entity tests'
+type: module
+description: 'Support module for webprofiler config entity decorator generator.'
+package: Testing
+# version: VERSION
+dependencies:
+  - webprofiler:webprofiler
+
+# Information added by Drupal.org packaging script on 2025-05-27
+version: '11.1.1'
+project: 'webprofiler'
+datestamp: 1748345319

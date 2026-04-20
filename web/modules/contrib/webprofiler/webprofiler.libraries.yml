@@ -1,0 +1,34 @@
+dashboard:
+  version: VERSION
+  css:
+    component:
+      css/dashboard.css: {}
+  js:
+    js/dashboard.js: {}
+  dependencies:
+    - core/once
+    - core/drupal.ajax
+
+database:
+  version: VERSION
+  css:
+    component:
+      css/database.css: { }
+  js:
+    js/database.js: {}
+  dependencies:
+    - core/once
+
+tab:
+  version: VERSION
+  css:
+    component:
+      css/tab.css: {}
+  js:
+    js/tab.js: {}
+
+cwv:
+  version: VERSION
+  css:
+    component:
+      css/cwv.css: {}
