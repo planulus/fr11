@@ -1,0 +1,11 @@
+name: '3. Ridge'
+type: module
+description: 'Mountains of Virginia.'
+package: Testing
+dependencies:
+  - module_filter:module_filter
+
+# Information added by Drupal.org packaging script on 2025-06-23
+version: '5.0.4'
+project: 'module_filter'
+datestamp: 1750704822

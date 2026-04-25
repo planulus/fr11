@@ -2,8 +2,9 @@
 /vendor/
 
 # --- Drupal Configuration & Files ---
-/web/sites/*/settings.local.php
-/web/sites/*/files/
+/web/sites/default/settings.local.php
+/web/sites/default/files/
+/web/sites/default/settings.php
 /web/sites/simpletest
 
 # --- DDEV Specifics ---
