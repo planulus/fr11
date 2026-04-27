@@ -1,4 +1,4 @@
-name: fr11v2
+name: fr11
 type: drupal11
 docroot: web
 php_version: "8.4"
