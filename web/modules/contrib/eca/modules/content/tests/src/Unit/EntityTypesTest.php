@@ -36,17 +36,18 @@ class EntityTypesTest extends TestCase {
    */
   protected function setUp(): void {
     parent::setUp();
-    $this->entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
-    $this->entityTypeBundleInfo = $this->createMock(EntityTypeBundleInfoInterface::class);
+    $this->entityTypeManager = $this->createStub(EntityTypeManagerInterface::class);
+    $this->entityTypeBundleInfo = $this->createStub(EntityTypeBundleInfoInterface::class);
   }
 
   /**
    * Tests the method getTypesAndBundles without content entity types.
    */
   public function testGetTypesAndBundlesWithoutTypes(): void {
-    $this->entityTypeManager->expects($this->once())
+    $entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
+    $entityTypeManager->expects($this->once())
       ->method('getDefinitions')->willReturn([]);
-    $entityTypeHelper = new ContentEntityTypes($this->entityTypeManager, $this->entityTypeBundleInfo);
+    $entityTypeHelper = new ContentEntityTypes($entityTypeManager, $this->entityTypeBundleInfo);
     $this->assertEquals([], $entityTypeHelper->getTypesAndBundles());
   }
 
@@ -57,9 +58,10 @@ class EntityTypesTest extends TestCase {
     $expected = [
       ContentEntityTypes::ALL => '- any -',
     ];
-    $this->entityTypeManager->expects($this->once())
+    $entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
+    $entityTypeManager->expects($this->once())
       ->method('getDefinitions')->willReturn([]);
-    $entityTypeHelper = new ContentEntityTypes($this->entityTypeManager, $this->entityTypeBundleInfo);
+    $entityTypeHelper = new ContentEntityTypes($entityTypeManager, $this->entityTypeBundleInfo);
     $this->assertEquals($expected, $entityTypeHelper->getTypesAndBundles(TRUE));
   }
 
@@ -80,10 +82,11 @@ class EntityTypesTest extends TestCase {
       'Comment' => 'Comment',
     ];
 
-    $this->entityTypeManager->expects($this->once())
+    $entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
+    $entityTypeManager->expects($this->once())
       ->method('getDefinitions')
       ->willReturn($this->getContentEntityTypesByLabels($labels));
-    $entityTypeHelper = new ContentEntityTypes($this->entityTypeManager, $this->entityTypeBundleInfo);
+    $entityTypeHelper = new ContentEntityTypes($entityTypeManager, $this->entityTypeBundleInfo);
     $this->assertEquals($expected, $entityTypeHelper->getTypesAndBundles());
   }
 
@@ -104,10 +107,11 @@ class EntityTypesTest extends TestCase {
       'Comment' => 'Comment',
     ];
 
-    $this->entityTypeManager->expects($this->once())
+    $entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
+    $entityTypeManager->expects($this->once())
       ->method('getDefinitions')
       ->willReturn($this->getContentEntityTypesByLabels($labels));
-    $entityTypeHelper = new ContentEntityTypes($this->entityTypeManager, $this->entityTypeBundleInfo);
+    $entityTypeHelper = new ContentEntityTypes($entityTypeManager, $this->entityTypeBundleInfo);
     $this->assertEquals($expected, $entityTypeHelper->getTypesAndBundles(FALSE, FALSE));
   }
 
@@ -126,10 +130,11 @@ class EntityTypesTest extends TestCase {
       'Comment' => 'Comment',
     ];
 
-    $this->entityTypeManager->expects($this->once())
+    $entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
+    $entityTypeManager->expects($this->once())
       ->method('getDefinitions')
       ->willReturn($this->getContentEntityTypesByLabels($labels, FALSE));
-    $entityTypeHelper = new ContentEntityTypes($this->entityTypeManager, $this->entityTypeBundleInfo);
+    $entityTypeHelper = new ContentEntityTypes($entityTypeManager, $this->entityTypeBundleInfo);
     $this->assertEquals($expected, $entityTypeHelper->getTypesAndBundles());
   }
 
@@ -145,27 +150,28 @@ class EntityTypesTest extends TestCase {
    *   The content entity types.
    */
   private function getContentEntityTypesByLabels(array $labels, bool $includeBundleKey = TRUE): array {
+    $bundles = [
+      'bundleKey1' => [
+        'label' => 'Node',
+      ],
+      'bundleKey2' => [
+        'label' => 'Article',
+      ],
+    ];
+    $this->entityTypeBundleInfo->method('getBundleInfo')
+      ->willReturn($bundles);
+
     $entityTypes = [];
     foreach ($labels as $key => $label) {
-      $entityType = $this->createMock(ContentEntityTypeInterface::class);
+      $entityType = $this->createStub(ContentEntityTypeInterface::class);
       $entityType->method('id')->willReturn($key);
       $entityType->method('getLabel')->willReturn($label);
-      $bundles = [
-        'bundleKey1' => [
-          'label' => 'Node',
-        ],
-        'bundleKey2' => [
-          'label' => 'Article',
-        ],
-      ];
       $entityKeys = [];
       if ($includeBundleKey) {
         $entityKeys = ['bundle' => 'test'];
       }
-      $entityType->method('get')->with('entity_keys')
+      $entityType->method('get')
         ->willReturn($entityKeys);
-      $this->entityTypeBundleInfo->method('getBundleInfo')
-        ->willReturn($bundles);
 
       $entityTypes[] = $entityType;
     }
@@ -177,7 +183,7 @@ class EntityTypesTest extends TestCase {
    */
   public function testBundleFieldAppliesAllTypes(): void {
     $entityTypeHelper = new ContentEntityTypes($this->entityTypeManager, $this->entityTypeBundleInfo);
-    $entityMock = $this->createMock(EntityInterface::class);
+    $entityMock = $this->createStub(EntityInterface::class);
     $entityMock->method('getEntityTypeId')->willReturn('node');
     $entityMock->method('bundle')->willReturn('article');
     $this->assertTrue($entityTypeHelper->bundleFieldApplies(

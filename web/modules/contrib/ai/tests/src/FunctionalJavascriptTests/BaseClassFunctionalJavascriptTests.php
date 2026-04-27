@@ -29,7 +29,7 @@ abstract class BaseClassFunctionalJavascriptTests extends WebDriverTestBase {
    *
    * @var string
    */
-  protected string $screenshotPath = 'sites/simpletest/screenshots/';
+  protected string $screenshotPath = 'sites/default/files/simpletest/screenshots/';
 
   /**
    * Screenshot category.
@@ -107,7 +107,7 @@ abstract class BaseClassFunctionalJavascriptTests extends WebDriverTestBase {
    *
    * @var string
    */
-  protected string $videoPath = 'sites/simpletest/videos/';
+  protected string $videoPath = 'sites/default/files/simpletest/videos/';
 
   /**
    * The ffmpeg process resource.

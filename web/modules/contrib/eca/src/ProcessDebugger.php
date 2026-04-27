@@ -347,10 +347,16 @@ class ProcessDebugger {
       return;
     }
     $this->history[] = [
-      'type' => 'execute',
+      'type' => 'exception',
       'id' => $id,
       'object' => $object,
-      'exception' => $ex,
+      'exception' => [
+        'class' => get_class($ex),
+        'code' => $ex->getCode(),
+        'message' => $ex->getMessage(),
+        'file' => $ex->getFile() . ':' . $ex->getLine(),
+        'trace' => $ex->getTraceAsString(),
+      ],
       'data' => $this->getTokenData(),
     ];
   }

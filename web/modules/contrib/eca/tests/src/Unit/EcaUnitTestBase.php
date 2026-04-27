@@ -22,7 +22,7 @@ abstract class EcaUnitTestBase extends UnitTestCase {
    */
   protected function setUp(): void {
     parent::setUp();
-    $this->entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
+    $this->entityTypeManager = $this->createStub(EntityTypeManagerInterface::class);
   }
 
   /**

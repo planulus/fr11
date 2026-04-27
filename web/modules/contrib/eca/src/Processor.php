@@ -167,6 +167,7 @@ class Processor {
     $this->tokenBrowser = $tokenBrowser;
     $this->templateTokenResolver = $templateTokenResolver;
     $this->currentUser = $currentUser;
+    $this->tokenBrowser->checkTestingTimeout();
     ProcessDebugger::$debug = $this->state->get('_eca_internal_debug_mode', FALSE) ?? FALSE;
   }
 

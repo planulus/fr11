@@ -33,7 +33,7 @@ class YamlParserTest extends UnitTestCase {
    */
   protected function setUp(): void {
     parent::setUp();
-    $this->token = $this->createMock(TokenInterface::class);
+    $this->token = $this->createStub(TokenInterface::class);
     $this->yamlParser = new YamlParser($this->token);
   }
 
@@ -52,9 +52,11 @@ class YamlParserTest extends UnitTestCase {
    * Tests parsing a scalar string without token replacement.
    */
   public function testParseScalarStringNoReplace(): void {
-    $this->token->expects($this->never())->method('replaceClear');
+    $token = $this->createMock(TokenInterface::class);
+    $token->expects($this->never())->method('replaceClear');
+    $yamlParser = new YamlParser($token);
 
-    $result = $this->yamlParser->parse('Hello [site:name]', FALSE);
+    $result = $yamlParser->parse('Hello [site:name]', FALSE);
     $this->assertSame('Hello [site:name]', $result);
   }
 
@@ -209,10 +211,12 @@ YAML;
    * Tests that token replacement is disabled when flag is FALSE.
    */
   public function testParseArrayNoReplace(): void {
-    $this->token->expects($this->never())->method('replaceClear');
+    $token = $this->createMock(TokenInterface::class);
+    $token->expects($this->never())->method('replaceClear');
+    $yamlParser = new YamlParser($token);
 
     $yaml = "'[token:key]': '[token:value]'";
-    $result = $this->yamlParser->parse($yaml, FALSE);
+    $result = $yamlParser->parse($yaml, FALSE);
     $this->assertSame(['[token:key]' => '[token:value]'], $result);
   }
 

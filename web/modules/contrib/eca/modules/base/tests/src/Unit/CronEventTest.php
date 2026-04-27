@@ -8,6 +8,7 @@ use Drupal\eca\ConfigurableLoggerChannel;
 use Drupal\eca\EcaState;
 use Drupal\eca_base\Event\CronEvent;
 use Drupal\eca_base\Plugin\ECA\Event\BaseEvent;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
@@ -26,9 +27,8 @@ class CronEventTest extends UnitTestCase {
    *   The frequency formatted as cron job like e.g. "* * * * *".
    * @param string $expected
    *   The expected date and time formatted as "Y-M-D h:i" for next execution.
-   *
-   * @dataProvider cronTestDueDatesAndTimesData
    */
+  #[DataProvider('cronTestDueDatesAndTimesData')]
   public function testDueDatesAndTimes(string $last, string $frequency, string $expected): void {
     $dt = new \DateTime($last, new \DateTimeZone('UTC'));
     $lastTimestamp = $dt->getTimestamp();
@@ -39,8 +39,8 @@ class CronEventTest extends UnitTestCase {
     $today_0100am = (new \DateTime($now->format('Y-m-d 01:00:01'), new \DateTimeZone('UTC')))->getTimestamp();
     $today_0200am = (new \DateTime($now->format('Y-m-d 02:00:01'), new \DateTimeZone('UTC')))->getTimestamp();
     $state_mock = $this->getStateMock($today_0100am, $today_0200am);
-    $date_formatter_mock = $this->createMock(DateFormatter::class);
-    $logger_mock = $this->createMock(ConfigurableLoggerChannel::class);
+    $date_formatter_mock = $this->createStub(DateFormatter::class);
+    $logger_mock = $this->createStub(ConfigurableLoggerChannel::class);
 
     $event = new CronEvent($state_mock, $date_formatter_mock, $logger_mock);
     $nextTimestamp = $event->getNextRunTimestamp($lastTimestamp, $frequency);
@@ -93,16 +93,15 @@ class CronEventTest extends UnitTestCase {
    *   tomorrow.
    * @param string $message
    *   A message that describes the data input.
-   *
-   * @dataProvider appliesData
    */
+  #[DataProvider('appliesData')]
   public function testApplies(string $frequency, bool $return_today, bool $return_tomorrow, bool $return_after_tomorrow, string $message): void {
     $now = new \DateTime('now', new \DateTimeZone('UTC'));
     $today_0100am = (new \DateTime($now->format('Y-m-d 01:00:01'), new \DateTimeZone('UTC')))->getTimestamp();
     $today_0200am = (new \DateTime($now->format('Y-m-d 02:00:01'), new \DateTimeZone('UTC')))->getTimestamp();
     $state_mock = $this->getStateMock($today_0100am, $today_0200am);
-    $date_formatter_mock = $this->createMock(DateFormatter::class);
-    $logger_mock = $this->createMock(ConfigurableLoggerChannel::class);
+    $date_formatter_mock = $this->createStub(DateFormatter::class);
+    $logger_mock = $this->createStub(ConfigurableLoggerChannel::class);
 
     $event = new CronEvent($state_mock, $date_formatter_mock, $logger_mock);
     $this->assertSame($return_today, BaseEvent::appliesForWildcard($event, '', $this->randomMachineName() . '::' . $frequency), 'Today - ' . $message);
@@ -215,7 +214,7 @@ class CronEventTest extends UnitTestCase {
    *   The mock.
    */
   private function getStateMock(int $returnGetTimestamp, $returnGetCurrentTimestamp): EcaState {
-    $mock = $this->createMock(EcaState::class);
+    $mock = $this->createStub(EcaState::class);
     $mock->method('getTimestamp')->willReturn($returnGetTimestamp);
     $mock->method('getCurrentTimestamp')->willReturn($returnGetCurrentTimestamp);
     return $mock;

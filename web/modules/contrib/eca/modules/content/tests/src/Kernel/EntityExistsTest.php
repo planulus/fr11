@@ -77,7 +77,7 @@ class EntityExistsTest extends KernelTestBase {
   /**
    * Tests EntityExists.
    */
-  public function testEntityExists() {
+  public function testEntityExists(): void {
     // Create the Article content type with revisioning and translation enabled.
     $this->createContentType([
       'type' => 'article',

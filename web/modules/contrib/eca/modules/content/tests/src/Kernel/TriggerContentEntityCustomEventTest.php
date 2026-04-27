@@ -77,7 +77,7 @@ class TriggerContentEntityCustomEventTest extends KernelTestBase {
   /**
    * Tests triggering an entity-aware custom event.
    */
-  public function testTriggerAction() {
+  public function testTriggerAction(): void {
     /** @var \Drupal\Core\Action\ActionManager $action_manager */
     $action_manager = \Drupal::service('plugin.manager.action');
     /** @var \Drupal\eca\Token\TokenInterface $token_services */

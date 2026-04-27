@@ -334,8 +334,10 @@ class Api {
       'model_constraints' => $this->prepareModelConstraints($owner),
       'permissions' => ModelerApiPermissions::userPermissionsForModeler($this->currentUser, $owner->getPluginId()),
       'favorite_components' => $owner->favoriteOwnerComponents(),
-      'global_tokens' => $this->prepareGlobalTokens(),
-      'template_tokens' => $this->prepareTemplateTokens($owner),
+      'global_tokens_url' => Url::fromRoute('modeler_api.global_tokens')->toString(),
+      'template_tokens_url' => Url::fromRoute('modeler_api.template_tokens', [
+        'owner_id' => $owner->getPluginId(),
+      ])->toString(),
       'contexts' => $this->contextListBuilder->getList($owner->getPluginId()),
       'dependencies' => $this->dependencyListBuilder->getList($owner->getPluginId()),
       'readOnly' => $readOnly,
@@ -895,7 +897,7 @@ class Api {
    * @return array
    *   The global tokens.
    */
-  protected function prepareGlobalTokens(): array {
+  public function prepareGlobalTokens(): array {
     $treeBuilder = $this->getTokenTreeBuilder();
     if ($treeBuilder === NULL) {
       return [];
@@ -905,16 +907,33 @@ class Api {
     $tokenService = $this->getTokenService();
 
     $tokens = [];
-    $tokenInfo = $tokenService->getInfo();
+    try {
+      $tokenInfo = $tokenService->getInfo();
+    }
+    catch (\Throwable) {
+      return [];
+    }
     // @phpstan-ignore-next-line
     foreach ($tokenService->getGlobalTokenTypes() as $type) {
-      $tree = $treeBuilder->buildTree($type);
+      try {
+        $tree = $treeBuilder->buildTree($type);
+      }
+      catch (\Throwable) {
+        // Skip this token type to prevent WSOD.
+        continue;
+      }
       $tokens[$type] = [
-        'name' => $tokenInfo['types'][$type]['name'],
+        'name' => $tokenInfo['types'][$type]['name'] ?? (string) $type,
         'children' => [],
       ];
       foreach ($tree as $token => $def) {
-        $tokens[$type]['children'][$token] = $this->prepareTokenDefinition($def, $tokenService);
+        try {
+          $tokens[$type]['children'][$token] = $this->prepareTokenDefinition($def, $tokenService);
+        }
+        catch (\Throwable) {
+          // Skip this single token to prevent WSOD.
+          continue;
+        }
       }
     }
     return $tokens;
@@ -929,7 +948,7 @@ class Api {
    * @return array
    *   The template tokens.
    */
-  protected function prepareTemplateTokens(ModelOwnerInterface $owner): array {
+  public function prepareTemplateTokens(ModelOwnerInterface $owner): array {
     if (!$owner->supportsTemplate()) {
       return [];
     }
@@ -949,11 +968,23 @@ class Api {
    */
   private function prepareTokenDefinition(array $def, BaseToken $tokenService): array {
     if (empty($def['children'])) {
-      $def['value'] = $tokenService->replace($def['raw token'] ?? '', [], ['clear' => TRUE]);
+      try {
+        $def['value'] = $tokenService->replace($def['raw token'] ?? '', [], ['clear' => TRUE]);
+      }
+      catch (\Throwable) {
+        // Ignore this single token replacement to prevent WSOD.
+        $def['value'] = '';
+      }
     }
     else {
       foreach ($def['children'] as $childToken => $childDef) {
-        $def['children'][$childToken] = $this->prepareTokenDefinition($childDef, $tokenService);
+        try {
+          $def['children'][$childToken] = $this->prepareTokenDefinition($childDef, $tokenService);
+        }
+        catch (\Throwable) {
+          // Skip this single child token to prevent WSOD.
+          unset($def['children'][$childToken]);
+        }
       }
     }
     return $def;

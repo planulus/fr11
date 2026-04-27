@@ -63,7 +63,7 @@ class SetFieldValueTest extends KernelTestBase {
   /**
    * Tests setting field values on a node body field.
    */
-  public function testNodeBody() {
+  public function testNodeBody(): void {
     /** @var \Drupal\eca\Token\TokenInterface $token_services */
     $token_services = \Drupal::service('eca.token_services');
     /** @var \Drupal\Core\Session\AccountSwitcherInterface $account_switcher */
@@ -169,7 +169,7 @@ class SetFieldValueTest extends KernelTestBase {
   /**
    * Tests setting a multi-value string.
    */
-  public function testNodeStringMultiple() {
+  public function testNodeStringMultiple(): void {
     // Create the multi-value string field, using cardinality 3.
     $field_definition = FieldStorageConfig::create([
       'field_name' => 'field_string_multi',
@@ -343,7 +343,7 @@ class SetFieldValueTest extends KernelTestBase {
   /**
    * Tests setting single references.
    */
-  public function testNodeReferenceSingle() {
+  public function testNodeReferenceSingle(): void {
     $this->saveField('field_node_single', 1);
     $node1 = $this->getNode('123');
     $node2 = $this->getNode('456');
@@ -430,7 +430,7 @@ class SetFieldValueTest extends KernelTestBase {
   /**
    * Tests setting multiple references.
    */
-  public function testNodeReferenceMulti() {
+  public function testNodeReferenceMulti(): void {
     $this->saveField('field_node_multi', FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED);
 
     $node1 = $this->getNode('123');
@@ -521,7 +521,7 @@ class SetFieldValueTest extends KernelTestBase {
   /**
    * Tests setting field values on a node body field.
    */
-  public function testNodeTitleForceClear() {
+  public function testNodeTitleForceClear(): void {
     $titleWithWhiteSpace = '  my title    ';
     $titleWithoutWhiteSpace = 'my title';
 

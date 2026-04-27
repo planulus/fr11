@@ -9,6 +9,27 @@ modeler_api.settings:
   requirements:
     _permission: 'administer site configuration'
 
+modeler_api.global_tokens:
+  path: '/system/modeler_api/global_tokens'
+  defaults:
+    _controller: 'Drupal\modeler_api\Controller\ModelerApi::globalTokens'
+  requirements:
+    _custom_access: '\Drupal\modeler_api\Controller\ModelerApi::checkGlobalTokenAccess'
+  options:
+    _htmx_route: true
+
+modeler_api.template_tokens:
+  path: '/system/modeler_api/template_tokens/{owner_id}'
+  defaults:
+    _controller: 'Drupal\modeler_api\Controller\ModelerApi::templateTokens'
+  requirements:
+    _custom_access: '\Drupal\modeler_api\Controller\ModelerApi::checkTemplateTokenAccess'
+  options:
+    _htmx_route: true
+    parameters:
+      owner_id:
+        type: string
+
 modeler_api.apply_template:
   path: '/system/modeler_api/apply_template'
   defaults:

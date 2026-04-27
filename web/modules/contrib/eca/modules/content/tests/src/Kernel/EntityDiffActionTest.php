@@ -19,7 +19,7 @@ class EntityDiffActionTest extends EntityDiffTestBase {
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  public function testEntityNonEqualResult() {
+  public function testEntityNonEqualResult(): void {
     $config = $this->getConfig();
     $config['return_values'] = 1;
 
@@ -43,7 +43,7 @@ class EntityDiffActionTest extends EntityDiffTestBase {
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  public function testEntityEqualResult() {
+  public function testEntityEqualResult(): void {
     $config = $this->getConfig([], ['nid', 'uuid', 'vid']);
     $config['return_values'] = 1;
 

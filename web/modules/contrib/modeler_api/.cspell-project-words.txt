@@ -5,3 +5,4 @@ linenums
 paramconverter
 pymdownx
 superfences
+wsod

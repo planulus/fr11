@@ -373,6 +373,19 @@ action.configuration.eca_form_field_default_value:
       type: boolean
       label: 'Filter XSS'
 
+action.configuration.eca_form_field_set_description:
+  type: mapping
+  label: 'Configuration for the "Form Field Set Description" action'
+  mapping:
+    description:
+      type: string
+      label: 'Element description'
+    field_name:
+      type: string
+      label: 'Field name'
+      constraints:
+        NotBlank: []
+
 action.configuration.eca_form_field_set_label:
   type: mapping
   label: 'Configuration for the "Form Field Set Label" action'

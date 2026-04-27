@@ -79,7 +79,7 @@ class LoadEntityRefTest extends KernelTestBase {
   /**
    * Tests LoadEntityRef.
    */
-  public function testLoadEntityRef() {
+  public function testLoadEntityRef(): void {
     // Create the Article content type with revisioning and translation enabled.
     $this->createContentType([
       'type' => 'article',

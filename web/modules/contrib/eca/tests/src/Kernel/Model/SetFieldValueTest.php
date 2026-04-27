@@ -29,10 +29,16 @@ class SetFieldValueTest extends Base {
   /**
    * {@inheritdoc}
    */
-  public function setUp(): void {
-    parent::setUp();
+  protected function installRequiredEntitySchemas(): void {
     $this->installEntitySchema('node');
     $this->installEntitySchema('taxonomy_term');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp(): void {
+    parent::setUp();
     $this->installSchema('node', ['node_access']);
     $this->switchUser(1);
   }

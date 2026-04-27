@@ -218,7 +218,7 @@ class Eca extends ModelOwnerBase {
       foreach ($model->get($typeString . 's') ?? [] as $id => $item) {
         $successors = [];
         foreach ($item['successors'] ?? [] as $successor) {
-          $successors[] = new ComponentSuccessor($successor['id'], $successor['condition']);
+          $successors[] = new ComponentSuccessor($successor['id'], $successor['condition'] ?? '');
         }
         $components[] = new Component(
           $this,

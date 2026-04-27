@@ -30,9 +30,15 @@ class CrossRefTest extends Base {
   /**
    * {@inheritdoc}
    */
+  protected function installRequiredEntitySchemas(): void {
+    $this->installEntitySchema('node');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function setUp(): void {
     parent::setUp();
-    $this->installEntitySchema('node');
     $this->installSchema('node', ['node_access']);
     $this->switchUser();
   }

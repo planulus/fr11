@@ -69,32 +69,41 @@ class Settings extends ConfigFormBase {
     $form['debug_mode'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Debug mode'),
+      '#description' => $this->t('Enable debug mode to collect detailed information about ECA processing, including token data and event history. Warning: this has a significant performance impact and should not be left enabled on production sites.'),
       '#default_value' => $this->state->get('_eca_internal_debug_mode', FALSE) ?? FALSE,
       '#weight' => -35,
     ];
     $form['debug_data_depth'] = [
       '#type' => 'number',
       '#title' => $this->t('Debug data depth'),
+      '#description' => $this->t('Maximum recursion depth for normalizing token data in the debugger. Higher values provide more detail but increase processing time.'),
       '#default_value' => $this->state->get('_eca_internal_debug_data_depth', 5) ?? 5,
       '#min' => 2,
       '#weight' => -30,
-      '#states' => [
-        'visible' => [
-          ':input[name="debug_mode"]' => ['checked' => TRUE],
-        ],
-      ],
     ];
     $form['debug_data_cases'] = [
       '#type' => 'number',
       '#title' => $this->t('Debug data cases'),
+      '#description' => $this->t('Maximum number of history cases stored per event. Each case captures a complete processing run for later inspection.'),
       '#default_value' => $this->state->get('_eca_internal_debug_data_cases', 10) ?? 10,
       '#min' => 1,
       '#weight' => -31,
-      '#states' => [
-        'visible' => [
-          ':input[name="debug_mode"]' => ['checked' => TRUE],
-        ],
-      ],
+    ];
+    $form['debug_test_timeout'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Debug test timeout'),
+      '#description' => $this->t('Timeout in seconds for the temporary debug mode triggered by the test button. When the test button auto-enables debug mode, it will be automatically disabled after this duration. Set to 0 to disable the timeout. Default: 300 (5 minutes).'),
+      '#default_value' => $this->state->get('_eca_internal_debug_test_timeout', 300) ?? 300,
+      '#min' => 0,
+      '#weight' => -29,
+    ];
+    $form['debug_test_timeout'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Debug test timeout'),
+      '#description' => $this->t('Timeout in seconds for the temporary debug mode triggered by the test button. When the test button auto-enables debug mode, it will be automatically disabled after this duration. Set to 0 to disable the timeout. Default: 300 (5 minutes).'),
+      '#default_value' => $this->state->get('_eca_internal_debug_test_timeout', 300) ?? 300,
+      '#min' => 0,
+      '#weight' => -29,
     ];
     $form['log_level'] = [
       '#type' => 'select',
@@ -239,9 +248,16 @@ class Settings extends ConfigFormBase {
     $config->set('dependency_calculation', $dependency_calculations);
     $config->save();
 
-    $this->state->set('_eca_internal_debug_mode', $form_state->getValue('debug_mode'));
+    $debugMode = $form_state->getValue('debug_mode');
+    if (($this->state->get('_eca_internal_debug_mode', FALSE) ?? FALSE) != $debugMode) {
+      // The user explicitly changed the debug mode, so clear any
+      // test-triggered timeout to prevent it from overriding this choice.
+      $this->state->delete('_eca_internal_debug_test_started');
+    }
+    $this->state->set('_eca_internal_debug_mode', $debugMode);
     $this->state->set('_eca_internal_debug_data_depth', $form_state->getValue('debug_data_depth'));
     $this->state->set('_eca_internal_debug_data_cases', $form_state->getValue('debug_data_cases'));
+    $this->state->set('_eca_internal_debug_test_timeout', (int) $form_state->getValue('debug_test_timeout'));
 
     parent::submitForm($form, $form_state);
   }

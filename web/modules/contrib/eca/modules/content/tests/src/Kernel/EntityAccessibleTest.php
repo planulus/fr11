@@ -69,7 +69,7 @@ class EntityAccessibleTest extends KernelTestBase {
   /**
    * Tests EntityIsAccessible.
    */
-  public function testEntityIsAccessible() {
+  public function testEntityIsAccessible(): void {
     /** @var \Drupal\eca\PluginManager\Condition $condition_manager */
     $condition_manager = \Drupal::service('plugin.manager.eca.condition');
     /** @var \Drupal\Core\Session\AccountSwitcherInterface $account_switcher */
@@ -209,7 +209,7 @@ class EntityAccessibleTest extends KernelTestBase {
   /**
    * Tests EntityFieldIsAccessible.
    */
-  public function testEntityFieldIsAccessible() {
+  public function testEntityFieldIsAccessible(): void {
     /** @var \Drupal\eca\PluginManager\Condition $condition_manager */
     $condition_manager = \Drupal::service('plugin.manager.eca.condition');
     /** @var \Drupal\Core\Session\AccountSwitcherInterface $account_switcher */

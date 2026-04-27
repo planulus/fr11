@@ -56,7 +56,7 @@ class SetValidationErrorTest extends KernelTestBase {
   /**
    * Tests validating a node and check its violations.
    */
-  public function testViolations() {
+  public function testViolations(): void {
 
     /** @var \Drupal\Core\Action\ActionManager $action_manager */
     $action_manager = \Drupal::service('plugin.manager.action');
@@ -96,7 +96,7 @@ class SetValidationErrorTest extends KernelTestBase {
   /**
    * Tests validating a node but use another event.
    */
-  public function testNoViolations() {
+  public function testNoViolations(): void {
 
     /** @var \Drupal\Core\Action\ActionManager $action_manager */
     $action_manager = \Drupal::service('plugin.manager.action');

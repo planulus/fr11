@@ -7,7 +7,6 @@ use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Tests\UnitTestCase;
 use Drupal\eca\Service\ServiceTrait;
 use PHPUnit\Framework\Attributes\Group;
-use PHPUnit\Framework\MockObject\MockObject;
 
 /**
  * Tests the service trait.
@@ -62,11 +61,11 @@ class ServiceTraitTest extends UnitTestCase {
    * @param string $label
    *   The plugin label.
    *
-   * @return \PHPUnit\Framework\MockObject\MockObject
-   *   The mocked plugin.
+   * @return \Drupal\Component\Plugin\PluginInspectionInterface
+   *   The stubbed plugin.
    */
-  private function getPluginMock(string $label): MockObject {
-    $mockObject = $this->createMock(PluginInspectionInterface::class);
+  private function getPluginMock(string $label): PluginInspectionInterface {
+    $mockObject = $this->createStub(PluginInspectionInterface::class);
     $mockObject->method('getPluginDefinition')->willReturn([
       'label' => $label,
     ]);
@@ -80,7 +79,7 @@ class ServiceTraitTest extends UnitTestCase {
    *   The mocked extension manager.
    */
   private function getExtensions(): ModuleExtensionList {
-    $mockObject = $this->createMock(ModuleExtensionList::class);
+    $mockObject = $this->createStub(ModuleExtensionList::class);
     $mockObject->method('getName')->willReturn('eca');
     return $mockObject;
   }

@@ -3,6 +3,8 @@
 namespace Drupal\modeler_api\Controller;
 
 use Drupal\Component\Plugin\Exception\PluginException;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\MessageCommand;
 use Drupal\Core\Ajax\RedirectCommand;
@@ -394,6 +396,80 @@ final class ModelerApi extends ControllerBase {
       $data = ['error' => 'Invalid JSON data.'];
     }
     return new JsonResponse($data);
+  }
+
+  /**
+   * Checks access for the global tokens endpoint.
+   *
+   * Grants access if the current user has edit or view permission for at
+   * least one model owner.
+   *
+   * @return \Drupal\Core\Access\AccessResultInterface
+   *   The access result.
+   */
+  public function checkGlobalTokenAccess(): AccessResultInterface {
+    $result = AccessResult::forbidden();
+    foreach ($this->modelOwnerPluginManager->getAllInstances() as $ownerId => $owner) {
+      if ($this->currentUser()->hasPermission('modeler api edit ' . $ownerId)
+        || $this->currentUser()->hasPermission('modeler api view ' . $ownerId)) {
+        $result = AccessResult::allowed();
+        break;
+      }
+    }
+    return $result;
+  }
+
+  /**
+   * Returns global tokens as JSON for on-demand loading.
+   *
+   * This endpoint defers the expensive token tree building and value resolution
+   * until the modeler UI explicitly requests it, rather than blocking the
+   * initial page load.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   The global tokens.
+   */
+  public function globalTokens(): JsonResponse {
+    return new JsonResponse($this->api->prepareGlobalTokens());
+  }
+
+  /**
+   * Checks access for the template tokens endpoint.
+   *
+   * Grants access if the current user has edit or view permission for the
+   * given model owner.
+   *
+   * @param string $owner_id
+   *   The model owner plugin ID.
+   *
+   * @return \Drupal\Core\Access\AccessResultInterface
+   *   The access result.
+   */
+  public function checkTemplateTokenAccess(string $owner_id): AccessResultInterface {
+    if ($this->currentUser()->hasPermission('modeler api edit ' . $owner_id)
+      || $this->currentUser()->hasPermission('modeler api view ' . $owner_id)) {
+      return AccessResult::allowed();
+    }
+    return AccessResult::forbidden();
+  }
+
+  /**
+   * Returns template tokens as JSON for on-demand loading.
+   *
+   * @param string $owner_id
+   *   The model owner plugin ID.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   The template tokens for the given model owner.
+   */
+  public function templateTokens(string $owner_id): JsonResponse {
+    try {
+      $owner = $this->modelOwnerPluginManager->createInstance($owner_id);
+    }
+    catch (PluginException) {
+      return new JsonResponse([]);
+    }
+    return new JsonResponse($this->api->prepareTemplateTokens($owner));
   }
 
 }

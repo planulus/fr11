@@ -5,6 +5,7 @@ namespace Drupal\Tests\eca_render\Kernel;
 use Drupal\Core\Render\Element;
 use Drupal\eca\Plugin\DataType\DataTransferObject;
 use Drupal\eca_test_render_basics\Event\BasicRenderEvent;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
@@ -18,9 +19,8 @@ class AddAttachmentTest extends RenderActionsTestBase {
 
   /**
    * Tests the action plugin "eca_render_add_attached_library".
-   *
-   * @dataProvider attachLibraryDataProvider
    */
+  #[DataProvider('attachLibraryDataProvider')]
   public function testAttachedLibrary($target_name, $library, $build, $build_result): void {
     /** @var \Drupal\eca_render\Plugin\Action\AddAttachedLibrary $action */
     $action = $this->actionManager->createInstance('eca_render_add_attached_library', [

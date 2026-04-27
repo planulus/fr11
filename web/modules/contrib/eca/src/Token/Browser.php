@@ -300,6 +300,7 @@ final class Browser {
     $this->sharedTempStore()->set('jobid::testing::' . $jobId, $event);
     if (!($this->state->get('_eca_internal_debug_mode', FALSE) ?? FALSE)) {
       $this->state->set('_eca_internal_debug_mode', TRUE);
+      $this->state->set('_eca_internal_debug_test_started', $this->time->getRequestTime());
       $this->sharedTempStore()->set('jobid::reset_debug::' . $jobId, TRUE);
     }
     return $jobId;
@@ -321,6 +322,7 @@ final class Browser {
     }
     if ($this->sharedTempStore()->get('jobid::reset_debug::' . $jobId)) {
       $this->state->set('_eca_internal_debug_mode', FALSE);
+      $this->state->delete('_eca_internal_debug_test_started');
       $this->sharedTempStore()->delete('jobid::reset_debug::' . $jobId);
     }
   }
@@ -347,11 +349,30 @@ final class Browser {
       $this->sharedTempStore()->delete('jobid::testing::' . $jobId);
       if ($this->sharedTempStore()->get('jobid::reset_debug::' . $jobId)) {
         $this->state->set('_eca_internal_debug_mode', FALSE);
+        $this->state->delete('_eca_internal_debug_test_started');
         $this->sharedTempStore()->delete('jobid::reset_debug::' . $jobId);
       }
       return ProcessDebugger::expandHistory($data['history'] ?? []);
     }
     return NULL;
+  }
+
+  /**
+   * Checks if test-triggered debug mode has expired and disables it.
+   *
+   * When the test/run button auto-enables debug mode, a timestamp is stored.
+   * This method checks whether the configured timeout has elapsed and, if so,
+   * automatically disables debug mode to prevent lingering performance impact.
+   */
+  public function checkTestingTimeout(): void {
+    $started = $this->state->get('_eca_internal_debug_test_started');
+    if ($started !== NULL) {
+      $timeout = $this->state->get('_eca_internal_debug_test_timeout', 300) ?? 300;
+      if ($timeout > 0 && $this->time->getRequestTime() - $started >= $timeout) {
+        $this->state->set('_eca_internal_debug_mode', FALSE);
+        $this->state->delete('_eca_internal_debug_test_started');
+      }
+    }
   }
 
   /**

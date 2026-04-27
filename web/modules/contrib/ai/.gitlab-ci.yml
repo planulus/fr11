@@ -92,6 +92,21 @@ js_build:
       npm run build
       cd $CI_PROJECT_DIR
 
+mkdocs:
+  stage: test
+  image: python:3.12-alpine
+  rules:
+    - changes:
+        - mkdocs.yml
+        - docs/**/*
+        - docs/*
+        - README.md
+      when: on_success
+    - when: never
+  script:
+    - pip install mkdocs mkdocs-material mike mkdocs-glightbox mkdocs-include-markdown-plugin
+    - mkdocs build --strict
+
 pages:
   stage: .post
   rules:

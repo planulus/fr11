@@ -76,7 +76,7 @@ class EntityLoaderTest extends KernelTestBase {
   /**
    * Tests EntityLoader.
    */
-  public function testEntityLoader() {
+  public function testEntityLoader(): void {
     // Create the Article content type with revisioning and translation enabled.
     $this->createContentType([
       'type' => 'article',

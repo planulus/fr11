@@ -96,7 +96,7 @@ class TranslateTest extends KernelTestBase {
   /**
    * Tests the "eca_translate" action plugin.
    */
-  public function testTranslate() {
+  public function testTranslate(): void {
     // Create the Article content type with revisioning and translation enabled.
     $this->createContentType([
       'type' => 'article',

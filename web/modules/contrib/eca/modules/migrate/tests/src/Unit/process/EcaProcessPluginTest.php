@@ -55,10 +55,7 @@ class EcaProcessPluginTest extends MigrateProcessTestCase {
     $expected = ['foo' => 'bars'];
     $destination_property = 'destination_property';
 
-    $event = $this->getMockBuilder(EcaMigrateProcessEvent::class)
-      ->onlyMethods(['getValue'])
-      ->disableOriginalConstructor()
-      ->getMock();
+    $event = $this->createMock(EcaMigrateProcessEvent::class);
     $event->expects($this->once())
       ->method('getValue')
       ->willReturn($expected);

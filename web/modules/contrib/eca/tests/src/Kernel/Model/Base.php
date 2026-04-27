@@ -51,6 +51,12 @@ abstract class Base extends KernelTestBase {
     $this->installConfig(['user', 'system', 'field', 'text', 'eca']);
     $this->installEntitySchema('user');
 
+    // Allow child classes to install entity schemas before config is imported,
+    // because Drupal 12 throws a LogicException when creating field storage
+    // definitions without the target entity schema being installed.
+    // @see \Drupal\Core\Test\EventSubscriber\FieldStorageCreateCheckSubscriber
+    $this->installRequiredEntitySchemas();
+
     // Install config for modules of the implementing test class.
     $this->installConfig(static::$modules);
 
@@ -76,6 +82,17 @@ abstract class Base extends KernelTestBase {
     $container
       ->register(self::$testLogServiceName, BufferingLogger::class)
       ->addTag('logger');
+  }
+
+  /**
+   * Installs entity schemas required before module config can be imported.
+   *
+   * Override this in child classes that have test modules shipping field
+   * storage config (e.g. field.storage.node.*), so that the entity schema
+   * exists before the config installer creates the field storage.
+   */
+  protected function installRequiredEntitySchemas(): void {
+    // No additional entity schemas needed by default.
   }
 
   /**

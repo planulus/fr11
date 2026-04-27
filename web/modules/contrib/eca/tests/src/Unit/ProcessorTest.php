@@ -89,24 +89,24 @@ class ProcessorTest extends EcaUnitTestBase {
    */
   protected function setUp(): void {
     parent::setUp();
-    $this->logger = $this->createMock(LoggerChannelInterface::class);
+    $this->logger = $this->createStub(LoggerChannelInterface::class);
     $this->tokenBrowser = new Browser(
-      $this->createMock(EventDispatcherInterface::class),
-      $this->createMock(TokenServices::class),
-      $this->createMock(EventPluginManager::class),
-      $this->createMock(PrivateTempStoreFactory::class),
-      $this->createMock(SharedTempStoreFactory::class),
-      $this->createMock(AccountProxyInterface::class),
-      $this->createMock(RequestStack::class),
-      $this->createMock(TimeInterface::class),
-      $this->createMock(StateInterface::class),
+      $this->createStub(EventDispatcherInterface::class),
+      $this->createStub(TokenServices::class),
+      $this->createStub(EventPluginManager::class),
+      $this->createStub(PrivateTempStoreFactory::class),
+      $this->createStub(SharedTempStoreFactory::class),
+      $this->createStub(AccountProxyInterface::class),
+      $this->createStub(RequestStack::class),
+      $this->createStub(TimeInterface::class),
+      $this->createStub(StateInterface::class),
     );
-    $this->templateTokenResolver = $this->createMock(TemplateTokenResolver::class);
-    $this->tokenService = $this->createMock(TokenInterface::class);
-    $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
-    $this->eventPluginManager = $this->createMock(EventPluginManager::class);
-    $this->state = $this->createMock(StateInterface::class);
-    $this->currentUser = $this->createMock(AccountProxyInterface::class);
+    $this->templateTokenResolver = $this->createStub(TemplateTokenResolver::class);
+    $this->tokenService = $this->createStub(TokenInterface::class);
+    $this->eventDispatcher = $this->createStub(EventDispatcherInterface::class);
+    $this->eventPluginManager = $this->createStub(EventPluginManager::class);
+    $this->state = $this->createStub(StateInterface::class);
+    $this->currentUser = $this->createStub(AccountProxyInterface::class);
   }
 
   /**
@@ -182,7 +182,7 @@ class ProcessorTest extends EcaUnitTestBase {
    *   The mocked ECA config entity.
    */
   private function getEca(string $id): Eca {
-    $eca = $this->createMock(Eca::class);
+    $eca = $this->createStub(Eca::class);
     $eca->set('id', $id);
     $eca->method('id')->willReturn($id);
     return $eca;
@@ -200,7 +200,7 @@ class ProcessorTest extends EcaUnitTestBase {
    *   The mocked event.
    */
   private function getEcaEvent(Eca $eca, string $id): EcaEvent {
-    $event = $this->createMock(EventInterface::class);
+    $event = $this->createStub(EventInterface::class);
     return new EcaEvent($eca, $id, 'label', $event);
   }
 

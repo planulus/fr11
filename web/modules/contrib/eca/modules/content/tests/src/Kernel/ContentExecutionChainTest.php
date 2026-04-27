@@ -81,7 +81,7 @@ class ContentExecutionChainTest extends KernelTestBase {
   /**
    * Tests execution chains using plugins of eca_content.
    */
-  public function testExecutionChain() {
+  public function testExecutionChain(): void {
     /** @var \Drupal\Core\Session\AccountSwitcherInterface $account_switcher */
     $account_switcher = \Drupal::service('account_switcher');
 
@@ -317,7 +317,7 @@ class ContentExecutionChainTest extends KernelTestBase {
   /**
    * Tests an execution chain of multiple saving operations.
    */
-  public function testEntitySaving() {
+  public function testEntitySaving(): void {
     /** @var \Drupal\Core\Session\AccountSwitcherInterface $account_switcher */
     $account_switcher = \Drupal::service('account_switcher');
     $account_switcher->switchTo(User::load(1));

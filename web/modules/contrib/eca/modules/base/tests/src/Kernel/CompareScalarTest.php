@@ -5,6 +5,7 @@ namespace Drupal\Tests\eca_base\Kernel;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\eca\Plugin\ECA\Condition\StringComparisonBase;
 use Drupal\eca\PluginManager\Condition;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
@@ -47,11 +48,10 @@ class CompareScalarTest extends KernelTestBase {
   /**
    * Tests scalar value comparison.
    *
-   * @dataProvider stringDataProvider
-   * @dataProvider numericDataProvider
-   *
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
+  #[DataProvider('stringDataProvider')]
+  #[DataProvider('numericDataProvider')]
   public function testScalarValues($left, $right, $operator, $type, $case, $negate, $message, $assertTrue = TRUE): void {
     // Configure default settings for condition.
     $config = [

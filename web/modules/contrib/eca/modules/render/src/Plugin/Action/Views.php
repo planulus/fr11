@@ -14,6 +14,7 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\eca\Attribute\EcaAction;
 use Drupal\eca\Plugin\ECA\PluginFormTrait;
 use Drupal\views\Entity\View;
+use Drupal\views\Views as CoreViews;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -138,14 +139,25 @@ class Views extends RenderElementActionBase {
    * {@inheritdoc}
    */
   protected function doBuild(array &$build): void {
-    $args = [$this->getViewId(), $this->getDisplayId()];
-    foreach (explode('/', $this->getArguments()) as $argument) {
-      if ($argument !== '') {
-        $args[] = $argument;
+    $view = CoreViews::getView($this->getViewId());
+    if ($view && $view->access($this->getDisplayId())) {
+      $args = [];
+      foreach (explode('/', $this->getArguments()) as $argument) {
+        if ($argument !== '') {
+          $args[] = $argument;
+        }
       }
-    }
 
-    $build = views_embed_view(...$args) ?? [];
+      $build = [
+        '#type' => 'view',
+        '#name' => $this->getViewId(),
+        '#display_id' => $this->getDisplayId(),
+        '#arguments' => $args,
+      ];
+    }
+    else {
+      $build = [];
+    }
 
     $markup = $this->renderer->executeInRenderContext(new RenderContext(), function () use (&$build) {
       return $this->renderer->render($build);

@@ -103,8 +103,10 @@ class NewUser extends ConfigurableActionBase {
     if (empty($mail)) {
       throw new \InvalidArgumentException('The email address is empty.');
     }
+    $storage = $this->entityTypeManager->getStorage('user');
+    $users = $storage->loadByProperties(['mail' => $mail]);
     /** @var \Drupal\user\UserInterface|bool $existingUser */
-    $existingUser = user_load_by_mail($mail);
+    $existingUser = $users ? reset($users) : FALSE;
     if ($existingUser instanceof UserInterface) {
       throw new \InvalidArgumentException('A user account with email ' . $mail . ' already exists with ID ' . $existingUser->id() . '.');
     }
@@ -115,7 +117,7 @@ class NewUser extends ConfigurableActionBase {
     }
     $testName = $name;
     $i = 0;
-    while (user_load_by_name($testName)) {
+    while ($storage->loadByProperties(['name' => $testName])) {
       $i++;
       $testName = $name . '-' . $i;
     }

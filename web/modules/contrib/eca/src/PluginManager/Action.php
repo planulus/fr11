@@ -86,13 +86,6 @@ class Action extends ActionManager {
   /**
    * {@inheritdoc}
    */
-  public function getModuleHandler() {
-    return $this->decoratedManager->getModuleHandler();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function setCacheBackend(CacheBackendInterface $cache_backend, $cache_key, array $cache_tags = []): void {
     if (empty($cache_tags)) {
       // By default, use the cache tags of the action entity type. This makes
