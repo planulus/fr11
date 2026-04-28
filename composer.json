@@ -22,6 +22,9 @@
         "drupal/core-recipe-unpack": "^11.3",
         "drupal/core-recommended": "^11.3",
         "drupal/eca": "^3.1",
+        "drupal/feeds": "^3.2",
+        "drupal/feeds_ex": "^1.0@beta",
+        "drupal/feeds_tamper": "^2.0@RC",
         "drupal/module_filter": "^5.0",
         "drupal/webprofiler": "^11.1",
         "drush/drush": "^13.7"
@@ -29,7 +32,7 @@
     "conflict": {
         "drupal/drupal": "*"
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "alpha",
     "prefer-stable": true,
     "config": {
         "allow-plugins": {

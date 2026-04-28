@@ -1,0 +1,12 @@
+name: Feeds Extensible Parsers
+type: module
+description: A generic Feeds parser used to create extensible parsers.
+core_version_requirement: ^10 || ^11
+package: Feeds
+dependencies:
+  - feeds:feeds
+
+# Information added by Drupal.org packaging script on 2024-09-08
+version: '8.x-1.0-beta5'
+project: 'feeds_ex'
+datestamp: 1725794735

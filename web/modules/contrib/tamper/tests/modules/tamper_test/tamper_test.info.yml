@@ -1,0 +1,12 @@
+name: 'Tamper test'
+description: Test module for Tamper.
+type: module
+package: Testing
+dependencies:
+  - drupal:entity_test
+  - tamper:tamper
+
+# Information added by Drupal.org packaging script on 2025-11-20
+version: '8.x-1.0-beta2'
+project: 'tamper'
+datestamp: 1763649433
