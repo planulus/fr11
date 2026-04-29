@@ -107,7 +107,7 @@ class AgentRunner {
     $response = $agent->solve();
 
     // Check if tools was used.
-    $message = new ChatMessage('assistant', $response);
+    $message = new ChatMessage('assistant', $response ?? '');
 
     if ($history = $agent->getChatHistory()) {
       // Get the last message from the history.

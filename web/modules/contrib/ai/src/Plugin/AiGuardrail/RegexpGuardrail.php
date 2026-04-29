@@ -125,7 +125,7 @@ class RegexpGuardrail extends AiGuardrailPluginBase implements ConfigurableInter
     $form['violation_message'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Violation Message'),
-      '#default_value' => $this->configuration['violation_message'] ?: 'The text contains invalid content matching the pattern: @pattern',
+      '#default_value' => $this->configuration['violation_message'] ?? 'The text contains invalid content matching the pattern: @pattern',
       '#description' => $this->t('You can use the placeholder %placeholder to include the pattern used.', [
         '%placeholder' => '@pattern',
       ]),
