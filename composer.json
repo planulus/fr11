@@ -27,6 +27,7 @@
         "drupal/feeds_ex": "^1.0@beta",
         "drupal/feeds_tamper": "^2.0@RC",
         "drupal/module_filter": "^5.0",
+        "drupal/pathauto": "^1.14",
         "drupal/webform": "^6.2",
         "drupal/webprofiler": "^11.1",
         "drush/drush": "^13.7"
