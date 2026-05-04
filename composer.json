@@ -30,7 +30,8 @@
         "drupal/pathauto": "^1.14",
         "drupal/webform": "^6.2",
         "drupal/webprofiler": "^11.1",
-        "drush/drush": "^13.7"
+        "drush/drush": "^13.7",
+        "laminas/laminas-feed": "^2.26"
     },
     "conflict": {
         "drupal/drupal": "*"

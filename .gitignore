@@ -17,5 +17,5 @@
 
 # --- Sensitive Environment Files ---
 db.sql.gz
-vscode/
+.vscode/
 .DS_Store
