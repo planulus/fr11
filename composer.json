@@ -24,6 +24,7 @@
         "drupal/core-recommended": "^11.3",
         "drupal/eca": "^3.1",
         "drupal/feeds": "^3.2",
+        "drupal/feeds_ex": "^1.0@beta",
         "drupal/module_filter": "^5.0",
         "drupal/pathauto": "^1.14",
         "drupal/tamper": "^1.0@beta",
