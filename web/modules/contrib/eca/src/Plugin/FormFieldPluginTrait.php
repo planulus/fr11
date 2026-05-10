@@ -260,11 +260,15 @@ trait FormFieldPluginTrait {
     $field_name = $this->configuration['field_name'];
     if (mb_strpos($field_name, '.')) {
       $this->configuration['field_name'] = str_replace('.', '][', $field_name);
-      return $this->getTargetElement();
+      $result = &$this->getTargetElement();
+      $this->configuration['field_name'] = $field_name;
+      return $result;
     }
     if (mb_strpos($field_name, ':')) {
       $this->configuration['field_name'] = str_replace(':', '][', $field_name);
-      return $this->getTargetElement();
+      $result = &$this->getTargetElement();
+      $this->configuration['field_name'] = $field_name;
+      return $result;
     }
 
     return $nothing;
@@ -424,11 +428,15 @@ trait FormFieldPluginTrait {
       $field_name = $this->configuration['field_name'];
       if (mb_strpos($field_name, '.')) {
         $this->configuration['field_name'] = str_replace('.', '][', $field_name);
-        return $this->getSubmittedValue($found);
+        $value = &$this->getSubmittedValue($found);
+        $this->configuration['field_name'] = $field_name;
+        return $value;
       }
       if (mb_strpos($field_name, ':')) {
         $this->configuration['field_name'] = str_replace(':', '][', $field_name);
-        return $this->getSubmittedValue($found);
+        $value = &$this->getSubmittedValue($found);
+        $this->configuration['field_name'] = $field_name;
+        return $value;
       }
     }
 

@@ -65,38 +65,42 @@ final class PreConfiguredActionDeriver extends DeriverBase implements ContainerD
     }
     self::$recursion = TRUE;
 
-    $this->derivatives = [];
-    /** @var \Drupal\system\Entity\Action $action */
-    foreach ($this->actionEntityStorage->loadMultiple() as $action) {
-      try {
-        $pluginDefinition = $action->getPluginDefinition();
-      }
-      catch (PluginNotFoundException $ex) {
-        $this->logger->error('Preconfigured action with a missing plugin found. You should delete that action with "drush config:delete system.action.@plugin". @msg', [
-          '@plugin' => $action->id(),
-          '@msg' => $ex->getMessage(),
-        ]);
-        continue;
-      }
-      $id = $action->id();
-      $this->derivatives[$id] = [
-        'label' => 'Pre-configured: ' . $action->label(),
-        'action_entity_id' => $id,
-      ] + $base_plugin_definition;
-      foreach (['type', 'confirm_form_route_name'] as $key) {
-        if (isset($pluginDefinition[$key])) {
-          $this->derivatives[$action->id()][$key] = $pluginDefinition[$key];
+    try {
+      $this->derivatives = [];
+      /** @var \Drupal\system\Entity\Action $action */
+      foreach ($this->actionEntityStorage->loadMultiple() as $action) {
+        try {
+          $pluginDefinition = $action->getPluginDefinition();
+        }
+        catch (PluginNotFoundException $ex) {
+          $this->logger->error('Preconfigured action with a missing plugin found. You should delete that action with "drush config:delete system.action.@plugin". @msg', [
+            '@plugin' => $action->id(),
+            '@msg' => $ex->getMessage(),
+          ]);
+          continue;
+        }
+        $id = $action->id();
+        $this->derivatives[$id] = [
+          'label' => 'Pre-configured: ' . $action->label(),
+          'action_entity_id' => $id,
+        ] + $base_plugin_definition;
+        foreach (['type', 'confirm_form_route_name'] as $key) {
+          if (isset($pluginDefinition[$key])) {
+            $this->derivatives[$action->id()][$key] = $pluginDefinition[$key];
+          }
         }
       }
-    }
 
-    // Cache needs to be cleared here, because $action->getPluginDefinition()
-    // above within this method may build up an incomplete set of definitions,
-    // as we may return an empty array once we detect recursion.
-    $this->actionPluginManager->clearCachedDefinitions();
-    // Reset the flag as we are now finished building up the action plugins.
-    self::$recursion = FALSE;
-    return $this->derivatives;
+      return $this->derivatives;
+    }
+    finally {
+      // Cache needs to be cleared here, because $action->getPluginDefinition()
+      // above within this method may build up an incomplete set of definitions,
+      // as we may return an empty array once we detect recursion.
+      $this->actionPluginManager->clearCachedDefinitions();
+      // Reset the flag as we are now finished building up the action plugins.
+      self::$recursion = FALSE;
+    }
   }
 
   /**

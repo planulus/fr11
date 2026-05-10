@@ -70,11 +70,21 @@ class EcaStorage extends ConfigEntityStorage {
   }
 
   /**
+   * The maximum number of lock acquisition retries.
+   */
+  protected const MAX_LOCK_RETRIES = 10;
+
+  /**
    * Rebuilds the state of subscribed events.
    */
   public function rebuildSubscribedEvents(): void {
     $lock_name = 'eca_rebuild_subscribed_events';
-    if (!$this->lock->acquire($lock_name)) {
+    $retries = 0;
+    while (!$this->lock->acquire($lock_name)) {
+      if (++$retries > static::MAX_LOCK_RETRIES) {
+        $this->logger->warning('Could not acquire lock for rebuilding ECA subscribed events after @retries attempts.', ['@retries' => static::MAX_LOCK_RETRIES]);
+        return;
+      }
       try {
         $sleep = random_int(1000, 50000);
       }
@@ -82,8 +92,6 @@ class EcaStorage extends ConfigEntityStorage {
         $sleep = 2500;
       }
       usleep($sleep);
-      $this->rebuildSubscribedEvents();
-      return;
     }
 
     $subscribedEvents = $this->doRebuildSubscribedEvents();

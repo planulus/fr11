@@ -94,6 +94,7 @@ tnid
 translationcreate
 translationdelete
 translationinsert
+updatedb
 viewmodealter
 webform
 webprofiler

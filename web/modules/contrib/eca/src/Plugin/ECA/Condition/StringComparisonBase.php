@@ -121,8 +121,8 @@ abstract class StringComparisonBase extends ConditionBase {
         break;
 
       case static::COMPARE_TYPE_NATURAL:
-        $leftValue = 0;
-        $rightValue = strnatcmp((string) $leftValue, $rightValue);
+        $leftValue = strnatcmp((string) $leftValue, $rightValue);
+        $rightValue = 0;
         break;
 
       case static::COMPARE_TYPE_COUNT:

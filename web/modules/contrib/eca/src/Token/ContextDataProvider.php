@@ -5,7 +5,7 @@ namespace Drupal\eca\Token;
 /**
  * Contextual data that is made available for any child process.
  */
-class ContextDataProvider implements DataProviderInterface {
+class ContextDataProvider implements DynamicDataProviderInterface {
 
   /**
    * Stacked context data.
@@ -50,6 +50,19 @@ class ContextDataProvider implements DataProviderInterface {
    */
   public function pop(): void {
     array_shift(self::$stack);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getAvailableKeys(): array {
+    $keys = [];
+    foreach (self::$stack as $set) {
+      foreach (array_keys($set) as $key) {
+        $keys[$key] = TRUE;
+      }
+    }
+    return array_keys($keys);
   }
 
 }

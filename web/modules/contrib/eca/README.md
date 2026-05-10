@@ -7,6 +7,45 @@ evaluates conditions and executes actions accordingly. Combined with a visual
 modeler, ECA lets you build sophisticated automation workflows without writing
 code.
 
+### Upgrading from ECA 2
+
+If you are upgrading from ECA 2.x, do **not** jump directly to ECA 3.1 or
+later. Several modules that existed in ECA 2 (such as `eca_modeller_bpmn`) were
+removed in 3.1, and skipping the intermediate release can cause update failures.
+
+Choose one of these two upgrade paths:
+
+**Option A -- Step through ECA 3.0 first (recommended)**
+
+1. Update to ECA 3.0: `composer require drupal/eca:~3.0.0 drupal/bpmn_io:^3
+   drupal/modeler_api:^1`
+2. Run `drush cr && drush updatedb`
+3. Then update to the latest release: `composer require drupal/eca:^3`
+4. Run `drush cr && drush updatedb` again
+
+See the
+[ECA 3.0.0 release notes](https://www.drupal.org/project/eca/releases/3.0.0)
+for full details on the 2-to-3.0 migration.
+
+**Option B -- Clean up on ECA 2, then go to 3.1+ directly**
+
+While still on ECA 2, uninstall the modules that were removed in 3.1:
+
+```bash
+drush pm:uninstall eca_modeller_bpmn
+```
+
+Also review the
+[ECA 3.1.0 release notes](https://www.drupal.org/project/eca/releases/3.1.0)
+for the full list of extracted integrations (AI, IEF, Project Browser, Token,
+Webform, Field Widget Actions) and install their standalone replacements if you
+use them. Then update directly:
+
+```bash
+composer require drupal/eca:^3 drupal/bpmn_io:^3 drupal/modeler_api:^1
+drush cr && drush updatedb
+```
+
 ### How it works
 
 ECA listens to Drupal events and validates them against your models. Like

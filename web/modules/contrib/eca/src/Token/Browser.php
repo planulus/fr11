@@ -432,6 +432,18 @@ final class Browser {
         $data[$key] = $supportedToken;
       }
     }
+    // Query dynamic data providers for their available keys. This covers
+    // tokens that cannot be declared via #[Token] attributes because the
+    // keys are determined at runtime (e.g. user-configured queue tokens).
+    foreach ($this->token->getDataProviders() as $dataProvider) {
+      if ($dataProvider instanceof DynamicDataProviderInterface) {
+        foreach ($dataProvider->getAvailableKeys() as $key) {
+          if (!isset($data[$key]) && $this->token->hasTokenData($key)) {
+            $data[$key] = $this->token->getTokenData($key);
+          }
+        }
+      }
+    }
     $normalizedData = [];
     foreach ($data as $key => $value) {
       try {

@@ -179,7 +179,7 @@ class DependencyCalculation {
         continue;
       }
 
-      if (mb_strpos('type', $name) !== FALSE) {
+      if (mb_strpos($name, 'type') !== FALSE) {
         [$field, $bundle] = array_merge(explode(' ', $field, 2), [ContentEntityTypes::ALL]);
       }
       else {

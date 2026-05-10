@@ -4,12 +4,12 @@ namespace Drupal\eca_queue;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
-use Drupal\eca\Token\DataProviderInterface;
+use Drupal\eca\Token\DynamicDataProviderInterface;
 
 /**
  * Task that will be processed in a queue.
  */
-class Task implements DataProviderInterface {
+class Task implements DynamicDataProviderInterface {
 
   use DependencySerializationTrait;
 
@@ -122,6 +122,13 @@ class Task implements DataProviderInterface {
    */
   public function hasData(string $key): bool {
     return isset($this->data[$key]);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getAvailableKeys(): array {
+    return array_keys($this->data);
   }
 
 }

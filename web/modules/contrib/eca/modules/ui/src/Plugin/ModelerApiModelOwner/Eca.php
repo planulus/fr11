@@ -211,6 +211,23 @@ class Eca extends ModelOwnerBase {
   /**
    * {@inheritdoc}
    */
+  public function modelConstraints(): array {
+    return [
+      Api::COMPONENT_TYPE_START => [
+        'successors' => ['requireConditionWhenParallel' => TRUE],
+      ],
+      Api::COMPONENT_TYPE_ELEMENT => [
+        'successors' => ['requireConditionWhenParallel' => TRUE],
+      ],
+      Api::COMPONENT_TYPE_GATEWAY => [
+        'successors' => ['requireConditionWhenParallel' => TRUE],
+      ],
+    ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function usedComponents(ConfigEntityInterface $model): array {
     assert($model instanceof EcaModel);
     $components = [];
