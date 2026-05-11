@@ -16,6 +16,7 @@
     ],
     "require": {
         "composer/installers": "^2.3",
+        "cweagans/composer-patches": "^2.0",
         "drupal/admin_toolbar": "^3.6",
         "drupal/ai_provider_anthropic": "^1.2",
         "drupal/core-composer-scaffold": "^11.3",
@@ -25,6 +26,7 @@
         "drupal/eca": "^3.1",
         "drupal/feeds": "^3.2",
         "drupal/feeds_ex": "^1.0@beta",
+        "drupal/feeds_http_key_fetcher": "^1.0",
         "drupal/module_filter": "^5.0",
         "drupal/pathauto": "^1.14",
         "drupal/tamper": "^1.0@beta",
@@ -40,17 +42,24 @@
     "config": {
         "allow-plugins": {
             "composer/installers": true,
-            "drupal/core-composer-scaffold": true,
-            "drupal/core-recipe-unpack": true,
-            "drupal/core-project-message": true,
-            "phpstan/extension-installer": true,
+            "cweagans/composer-patches": true,
             "dealerdirect/phpcodesniffer-composer-installer": true,
+            "drupal/core-composer-scaffold": true,
+            "drupal/core-project-message": true,
+            "drupal/core-recipe-unpack": true,
             "php-http/discovery": true,
-            "php-tuf/composer-integration": true
+            "php-tuf/composer-integration": true,
+            "phpstan/extension-installer": true
         },
         "sort-packages": true
     },
     "extra": {
+        "enable-patching": true,
+        "patches": {
+            "drupal/feeds_http_key_fetcher": {
+                "Issues for Feeds HTTP Key Fetcher": "https://www.drupal.org/files/issues/2026-05-10/incompatible-httpkeyfetcherget-methods-3589254-4.patch"
+            }
+        },
         "drupal-scaffold": {
             "locations": {
                 "web-root": "web/"
