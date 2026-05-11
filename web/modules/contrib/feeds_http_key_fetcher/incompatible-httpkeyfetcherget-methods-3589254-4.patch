@@ -1,0 +1,54 @@
+diff --git a/src/Feeds/Fetcher/Form/HttpKeyFetcherFeedForm.php b/src/Feeds/Fetcher/Form/HttpKeyFetcherFeedForm.php
+index a51341d..0c8603a 100644
+--- a/src/Feeds/Fetcher/Form/HttpKeyFetcherFeedForm.php
++++ b/src/Feeds/Fetcher/Form/HttpKeyFetcherFeedForm.php
+@@ -23,7 +23,7 @@ class HttpKeyFetcherFeedForm extends HttpFetcherFeedForm {
+   /**
+    * {@inheritdoc}
+    */
+-  public function buildConfigurationForm(array $form, FormStateInterface $form_state, FeedInterface $feed = NULL) {
++  public function buildConfigurationForm(array $form, FormStateInterface $form_state, ?FeedInterface $feed = NULL) {
+       parent::buildConfigurationForm($form, $form_state, $feed);
+ 
+       $form['source'] = [
+@@ -43,7 +43,7 @@ class HttpKeyFetcherFeedForm extends HttpFetcherFeedForm {
+ 
+     return $form;
+   }
+-    public function submitConfigurationForm(array &$form, FormStateInterface $form_state, FeedInterface $feed = NULL)
++    public function submitConfigurationForm(array &$form, FormStateInterface $form_state, ?FeedInterface $feed = NULL)
+     {
+         parent::submitConfigurationForm($form, $form_state, $feed);
+         $feed_config = $feed->getConfigurationFor($this->plugin);
+diff --git a/src/Feeds/Fetcher/HttpKeyFetcher.php b/src/Feeds/Fetcher/HttpKeyFetcher.php
+index 24f7011..a5450f3 100644
+--- a/src/Feeds/Fetcher/HttpKeyFetcher.php
++++ b/src/Feeds/Fetcher/HttpKeyFetcher.php
+@@ -44,7 +44,8 @@ class HttpKeyFetcher extends HTTPFetcher {
+ 
+         // Get cache key if caching is enabled.
+         $cache_key = $this->useCache() ? $this->getCacheKey($feed) : FALSE;
+-        $response = $this->get($feed->getSource(), $sink, $this->getCacheKey($feed), $feed->getConfigurationFor($this)['key']);
++        $feed_configuration = $feed->getConfigurationFor($this);
++        $response = $this->get($feed->getSource(), $sink, $cache_key, [], $feed_configuration);
+         // @todo Handle redirects.
+         // @codingStandardsIgnoreStart
+         // $feed->setSource($response->getEffectiveUrl());
+@@ -79,14 +80,14 @@ class HttpKeyFetcher extends HTTPFetcher {
+    *
+    * @see \GuzzleHttp\RequestOptions
+    */
+-  protected function get($url, $sink, $cache_key = FALSE, $key = null) {
++  protected function get($url, $sink, $cache_key = FALSE, array $options = [], array $feed_configuration = []) {
+     $url = Feed::translateSchemes($url);
+ 
+     $options = [RequestOptions::SINK => $sink];
+ 
+     // This is the magic add the headers here so allows the request
+-    if($key !== null) {
+-      $options[RequestOptions::HEADERS]['x-api-key'] = $key;
++    if (!empty($feed_configuration['key'])) {
++      $options[RequestOptions::HEADERS]['x-api-key'] = $feed_configuration['key'];
+     }
+       // Add cached headers if requested.
+     if ($cache_key && ($cache = $this->cache->get($cache_key))) {

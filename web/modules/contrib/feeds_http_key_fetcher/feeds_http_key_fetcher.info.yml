@@ -1,0 +1,10 @@
+name: Feeds HTTP API key Fetcher
+description: Add an HTTP X API key header to the regular HTTP fetcher
+core_version_requirement: ^8 || ^9 || ^10 || ^11
+package: Feeds
+type: module
+
+# Information added by Drupal.org packaging script on 2025-08-13
+version: '1.0.2'
+project: 'feeds_http_key_fetcher'
+datestamp: 1755125543
