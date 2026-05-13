@@ -1,0 +1,17 @@
+{
+    "_hash": "7a36a840a91762a0c436361b95f99e762cd141b63d23e9cee1b4afb0b905b099",
+    "patches": {
+        "drupal/feeds_http_key_fetcher": [
+            {
+                "package": "drupal/feeds_http_key_fetcher",
+                "description": "Issues for Feeds HTTP Key Fetcher",
+                "url": "https://www.drupal.org/files/issues/2026-05-10/incompatible-httpkeyfetcherget-methods-3589254-4.patch",
+                "sha256": "1a2428afa3747fcb85ef972dcde92000291674c14749071401488dc68a3c736f",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            }
+        ]
+    }
+}
