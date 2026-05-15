@@ -202,6 +202,39 @@ class HostnameFilter {
   }
 
   /**
+   * Capture current programmatic overrides so they can later be restored.
+   *
+   * The HostnameFilter service is a singleton; callers that temporarily
+   * override its state (e.g. to scope a HostnameFilterDto to a single
+   * provider call) should snapshot before applying and restore afterwards
+   * to avoid leaking settings into unrelated calls.
+   *
+   * @return array
+   *   Opaque snapshot to pass to ::restoreSettings().
+   */
+  public function snapshotSettings(): array {
+    return [
+      'allowedDomains' => $this->allowedDomains,
+      'rewriteLinks' => $this->rewriteLinks,
+      'fullTrust' => $this->fullTrust,
+      'plainTextMode' => $this->plainTextMode,
+    ];
+  }
+
+  /**
+   * Restore a snapshot taken with ::snapshotSettings().
+   *
+   * @param array $snapshot
+   *   The snapshot returned by ::snapshotSettings().
+   */
+  public function restoreSettings(array $snapshot): void {
+    $this->allowedDomains = $snapshot['allowedDomains'] ?? NULL;
+    $this->rewriteLinks = $snapshot['rewriteLinks'] ?? NULL;
+    $this->fullTrust = $snapshot['fullTrust'] ?? NULL;
+    $this->plainTextMode = $snapshot['plainTextMode'] ?? NULL;
+  }
+
+  /**
    * Get allowed domain names.
    *
    * @return array
