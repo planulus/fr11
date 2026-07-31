@@ -10,7 +10,52 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**
- * A dynamic subscriber, listening on used events of active ECA configurations.
+ * Subscribes to exactly those events that active ECA models actually use.
+ *
+ * Unlike a regular event subscriber, this one does not declare a fixed list
+ * of events at compile time. Instead, it builds its subscription list
+ * dynamically from data stored in Drupal's state, so that ECA only ever
+ * reacts to events that are referenced by at least one enabled ECA model.
+ * This keeps ECA's runtime footprint minimal: events that no model listens
+ * to never reach the ECA processor.
+ *
+ * How the subscription list is built:
+ * - The list of subscribed events lives in the state key `eca.subscribed`.
+ *   It is keyed by event name and, for each event, holds the priority and
+ *   the ECA models (and their events) that subscribe to it.
+ * - ::getSubscribedEvents() reads that state and registers a single
+ *   ::onEvent() callback for every event name found there. If the state is
+ *   empty (no enabled models, or the state was never built), nothing is
+ *   subscribed and ECA stays dormant.
+ *
+ * When and how the state is (re)built:
+ * - The state is rebuilt by
+ *   \Drupal\eca\Entity\EcaStorage::rebuildSubscribedEvents(), which scans all
+ *   enabled, non-template ECA models and collects the events they use.
+ * - This happens automatically whenever an ECA config entity is saved or
+ *   deleted (see EcaStorage::doPostSave() and EcaStorage::delete()), because
+ *   those are the only moments at which the set of used events can change.
+ * - Note that the subscription state is recomputed only from ECA *models*.
+ *   Adding a new event plugin in a custom module does not change anything
+ *   here; an enabled ECA model has to actually use that event before ECA
+ *   starts listening to it.
+ * - After updating the state, EcaStorage re-registers this subscriber with
+ *   the event dispatcher so the new subscription list takes effect within
+ *   the same request, without requiring a container rebuild.
+ *
+ * Forcing a rebuild manually:
+ * - In the rare case where the state has become stale (for example after a
+ *   manual state edit, an interrupted save, or an inconsistent deployment),
+ *   the list can be rebuilt explicitly with the Drush command
+ *   `drush eca:subscriber:rebuild`, which calls
+ *   EcaStorage::rebuildSubscribedEvents() directly.
+ * - This command is a recovery fallback only. Under normal operation the
+ *   state stays in sync automatically through the save/delete hooks above,
+ *   so it should not be needed for day-to-day work.
+ *
+ * @see \Drupal\eca\Entity\EcaStorage::rebuildSubscribedEvents()
+ * @see \Drupal\eca\Drush\Commands\EcaCommands::rebuildSubscribedEvents()
+ * @see \Drupal\eca\Processor::execute()
  */
 class DynamicSubscriber implements EventSubscriberInterface {
 
@@ -23,6 +68,14 @@ class DynamicSubscriber implements EventSubscriberInterface {
 
   /**
    * {@inheritdoc}
+   *
+   * Builds the subscription list from the `eca.subscribed` state instead of a
+   * static declaration. For every event name stored there, a single
+   * ::onEvent() callback is registered at the priority recorded in the state.
+   * The state itself is maintained by
+   * \Drupal\eca\Entity\EcaStorage::rebuildSubscribedEvents().
+   *
+   * @see \Drupal\eca\Entity\EcaStorage::rebuildSubscribedEvents()
    */
   public static function getSubscribedEvents(): array {
     $events = [];
@@ -75,10 +128,19 @@ class DynamicSubscriber implements EventSubscriberInterface {
   /**
    * Callback forwarding the given event to the ECA processor.
    *
+   * Registered by ::getSubscribedEvents() for every event name found in the
+   * `eca.subscribed` state. When a subscribed event is dispatched, this
+   * callback hands it to the ECA processor, which then evaluates the matching
+   * ECA models. It is skipped when ECA has been deactivated at runtime via
+   * ::setActive(FALSE) or disabled globally through the `eca_disable` setting
+   * in settings.php.
+   *
    * @param \Symfony\Contracts\EventDispatcher\Event $event
    *   The triggered event that gets processed by the ECA processor.
    * @param string $event_name
    *   The specific event name that got triggered for that event.
+   *
+   * @see \Drupal\eca\Processor::execute()
    */
   public function onEvent(Event $event, string $event_name): void {
     if (!self::$isActive) {

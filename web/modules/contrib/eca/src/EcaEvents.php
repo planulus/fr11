@@ -40,6 +40,8 @@ final class EcaEvents {
    * this event may be also used to do preparations for the access check.
    * Execution will not happen when the access check evaluates to be false.
    *
+   * @Event
+   *
    * @var string
    */
   public const BEFORE_ACTION_EXECUTION = 'eca.execution.action.before';
@@ -55,6 +57,10 @@ final class EcaEvents {
    * access check or during action execution goes wrong, exceptions will
    * break out the regular execution logic. Whether or not an exception was
    * thrown, this event will be fired.
+   *
+   * @Event
+   *
+   * @var string
    */
   public const AFTER_ACTION_EXECUTION = 'eca.execution.action.after';
 

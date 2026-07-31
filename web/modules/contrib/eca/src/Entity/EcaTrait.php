@@ -169,7 +169,7 @@ trait EcaTrait {
    * Initializes the action service.
    *
    * @return \Drupal\eca\Service\Actions
-   *   The condition services.
+   *   The action services.
    */
   protected function actionServices(): Actions {
     if (!isset($this->actionServices)) {

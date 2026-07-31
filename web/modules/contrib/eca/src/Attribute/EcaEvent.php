@@ -6,7 +6,7 @@ use Drupal\Component\Plugin\Attribute\Plugin;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
- * Defines an ECA Condition attribute object.
+ * Defines an ECA Event attribute object.
  */
 #[\Attribute(\Attribute::TARGET_CLASS)]
 class EcaEvent extends Plugin {

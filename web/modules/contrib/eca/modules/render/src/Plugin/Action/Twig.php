@@ -59,11 +59,10 @@ class Twig extends Markup {
     $form['template'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Template'),
-      '#description' => $this->t('Must be valid Twig syntax.'),
+      '#description' => $this->t('Must be valid Twig syntax. Token data is available as Twig variables (for example <code>{{ node.title.value }}</code>); raw <code>[token]</code> replacement of the template source is no longer performed.'),
       '#weight' => -200,
       '#default_value' => $this->configuration['template'],
       '#required' => TRUE,
-      '#eca_token_replacement' => TRUE,
     ];
     $form = parent::buildConfigurationForm($form, $form_state);
     $form['value']['#title'] = $this->t('Context values');
@@ -97,7 +96,7 @@ class Twig extends Markup {
    * {@inheritdoc}
    */
   protected function doBuild(array &$build): void {
-    $template = trim((string) $this->tokenService->replaceClear($this->configuration['template']));
+    $template = trim((string) $this->configuration['template']);
     if ($template === '') {
       throw new \InvalidArgumentException("No template given for rendering an inline Twig template.");
     }

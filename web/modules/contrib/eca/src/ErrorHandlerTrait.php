@@ -42,7 +42,13 @@ trait ErrorHandlerTrait {
     $this->shutdownFunctionEnabled = TRUE;
     $shutdownFunctionEnabled = &$this->shutdownFunctionEnabled;
     register_shutdown_function(function () use ($buildMessage, &$shutdownFunctionEnabled) {
-      // @phpstan-ignore-next-line
+      // The value of $shutdownFunctionEnabled can change between registration
+      // of this shutdown function and its actual execution, namely when
+      // ::resetExtendedErrorHandling() is called. PHPStan cannot model this
+      // reference-by-closure mutation and emits a false positive for
+      // booleanNot.alwaysFalse here. The suppression lives in the module's
+      // phpstan.neon, scoped to the consuming class against which PHPStan
+      // surfaces the error.
       if (!$shutdownFunctionEnabled) {
         return;
       }

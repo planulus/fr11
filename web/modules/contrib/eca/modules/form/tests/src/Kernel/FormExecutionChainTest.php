@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\Tests\eca_content\Kernel;
+namespace Drupal\Tests\eca_form\Kernel;
 
 use Drupal\Core\Form\FormState;
 use Drupal\KernelTests\KernelTestBase;
@@ -265,7 +265,7 @@ class FormExecutionChainTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     $admin_user = User::load(1);
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\Tests\eca\Kernel;
+namespace Drupal\Tests\eca_base\Kernel;
 
 use Drupal\Component\Serialization\Yaml;
 use Drupal\KernelTests\KernelTestBase;

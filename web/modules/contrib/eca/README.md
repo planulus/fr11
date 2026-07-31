@@ -1,11 +1,15 @@
-**ECA is the no-code solution that empowers you to orchestrate your Drupal
-site.**
+**ECA is a visual automation and orchestration framework for Drupal.**
 
-ECA is a powerful, versatile, and user-friendly rules engine for Drupal. It
-processes event-condition-action models: when a Drupal event fires, ECA
-evaluates conditions and executes actions accordingly. Combined with a visual
-modeler, ECA lets you build sophisticated automation workflows without writing
-code.
+ECA enables users to model workflows, business rules, approvals, content
+behavior, integrations, and AI-powered processes without writing custom code.
+ECA lets you automate how your Drupal site behaves through a visual workflow
+builder.
+
+Unlike generic automation frameworks, ECA is deeply integrated into Drupal
+itself -- including content, users, forms, permissions, workflows, APIs, and
+Drupal's extensible ecosystem. This lets users and site builders replace large
+amounts of bespoke glue code with transparent, maintainable, and deployable
+workflows.
 
 ### Upgrading from ECA 2
 
@@ -48,12 +52,17 @@ drush cr && drush updatedb
 
 ### How it works
 
-ECA listens to Drupal events and validates them against your models. Like
-Drupal's core action system, ECA leverages existing Drupal components -- events,
-actions, and its own plugin manager for conditions. All three component types
-are plugins that can be extended by other modules. Models are stored as
-configuration, so they can be imported, exported, and deployed through Drupal's
-standard configuration management or Drush.
+ECA orchestrates how Drupal's subsystems work together. It listens to Drupal
+events, evaluates conditions, and executes actions based on your workflow
+models. When a Drupal event fires, ECA validates it against your models and runs
+the matching actions accordingly.
+
+ECA builds on Drupal's existing architecture -- events, actions, queues,
+workflows, forms, and APIs -- and adds its own plugin manager for conditions.
+All three component types (events, conditions, and actions) are plugins that can
+be extended by other modules. Models are stored as configuration, so they can be
+imported, exported, and deployed through Drupal's standard configuration
+management or Drush.
 
 <div class="note-version">
 

@@ -171,7 +171,7 @@ class FormFieldDefaultValue extends FormFieldActionBase {
 
         case 'button':
           $default_value_key = '#value';
-
+          // Intentional fall-through.
         default:
           $value = (string) $this->tokenService->replaceClear($value);
           $this->filterFormFieldValue($value);

@@ -81,7 +81,6 @@ class FormFieldSetOptions extends FormFieldActionBase {
     return $return_as_object ? $result : $result->isAllowed();
   }
 
-  // @codingStandardsIgnoreStart
   /**
    * {@inheritdoc}
    */
@@ -90,6 +89,5 @@ class FormFieldSetOptions extends FormFieldActionBase {
     // the trait would be used instead.
     parent::execute();
   }
-  // @codingStandardsIgnoreEnd
 
 }

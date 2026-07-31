@@ -148,8 +148,7 @@ class TokenExistsTest extends KernelTestBase {
     // @todo Disabled until we addressed token support for token_name.
     // @see https://www.drupal.org/project/eca/issues/3302569
     // $this->tokenServices->addTokenData('placeholder', 'mytoken3');
-    // @codingStandardsIgnoreLine
-    // $this->assertFalse($condition->evaluate(), "Placeholder should not exist");
+    // $this->assertFalse($condition->evaluate(), "...");
     $this->tokenService->addTokenData('placeholder', 'mytoken2');
     $this->assertTrue($condition->evaluate(), "Placeholder now should exist again");
   }

@@ -169,7 +169,7 @@ class UserEventsTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     user_login_finalize(User::load(1));
     $this->assertSame('admin + admin + admin', ArrayWrite::$array['login']);

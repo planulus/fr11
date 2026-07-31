@@ -3,6 +3,7 @@
 namespace Drupal\Tests\eca_content\Kernel;
 
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Core\Form\FormState;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -516,6 +517,142 @@ class SetFieldValueTest extends KernelTestBase {
     $this->assertEquals($node3->id(), $node1->field_node_multi[1]->target_id);
 
     $account_switcher->switchBack();
+  }
+
+  /**
+   * Tests emptying a single-value field with the "clear" method.
+   */
+  public function testNodeBodyClear(): void {
+    /** @var \Drupal\Core\Session\AccountSwitcherInterface $account_switcher */
+    $account_switcher = \Drupal::service('account_switcher');
+
+    $body = $this->randomMachineName(32);
+    $node = $this->getNodeWithBody('123', $body);
+
+    // A user without permissions must not have access to empty the field.
+    /** @var \Drupal\eca_content\Plugin\Action\SetFieldValue $action */
+    $action = $this->getAction('clear', 'body', '');
+    $this->assertFalse($action->access($node), 'User without permissions must not have access to empty the field.');
+
+    // Now switching to a privileged user.
+    $account_switcher->switchTo(User::load(1));
+
+    // The "clear" method must empty the field even when a field value is
+    // provided, unlike the "set:clear" method which would keep the value.
+    $action = $this->getAction('clear', 'body', 'this value is ignored');
+    $this->assertTrue($action->access($node), 'User with permissions must have access to empty the field.');
+    $this->assertEquals($body, $node->body->value, 'Original body value before action execution must remain the same.');
+    $action->execute($node);
+    $this->assertNull($node->body->value, 'After action execution, the body value must have been emptied.');
+
+    // Emptying an already empty field must not cause any error.
+    $action = $this->getAction('clear', 'body', '');
+    $action->execute($node);
+    $this->assertNull($node->body->value, 'The body value must remain empty.');
+
+    // The "clear" method must also work when targeting the column explicitly.
+    $node->body->value = $this->randomMachineName(32);
+    $action = $this->getAction('clear', 'body.value', '');
+    $action->execute($node);
+    $this->assertNull($node->body->value, 'The body value must have been emptied when targeting the column explicitly.');
+
+    $account_switcher->switchBack();
+  }
+
+  /**
+   * Tests emptying a multi-value field with the "clear" method.
+   */
+  public function testNodeStringMultipleClear(): void {
+    // Create the multi-value string field, using cardinality 3.
+    $field_definition = FieldStorageConfig::create([
+      'field_name' => 'field_string_multi',
+      'type' => 'string',
+      'entity_type' => 'node',
+      'cardinality' => 3,
+    ]);
+    $field_definition->save();
+    $instance = FieldConfig::create([
+      'field_name' => 'field_string_multi',
+      'label' => 'A string field having multiple values.',
+      'entity_type' => 'node',
+      'bundle' => 'article',
+    ]);
+    $instance->save();
+
+    /** @var \Drupal\Core\Session\AccountSwitcherInterface $account_switcher */
+    $account_switcher = \Drupal::service('account_switcher');
+
+    $string = $this->randomMachineName(32);
+    $text = $this->randomMachineName(32);
+    $node = $this->getNodeWithTextMulti($string, $text);
+
+    // A user without permissions must not have access to empty the field.
+    /** @var \Drupal\eca_content\Plugin\Action\SetFieldValue $action */
+    $action = $this->getAction('clear', 'field_string_multi', '');
+    $this->assertFalse($action->access($node), 'User without permissions must not have access to empty the field.');
+
+    // Now switching to a privileged user.
+    $account_switcher->switchTo(User::load(1));
+
+    $this->assertCount(3, $node->get('field_string_multi'), 'Three values must be set before emptying the field.');
+
+    // The "clear" method must empty all values of the multi-value field.
+    $action = $this->getAction('clear', 'field_string_multi', '');
+    $this->assertTrue($action->access($node), 'User with permissions must have access to empty the field.');
+    $action->execute($node);
+    $this->assertCount(0, $node->get('field_string_multi'), 'After action execution, the multi-value field must have been emptied.');
+
+    // Emptying an already empty multi-value field must not cause any error.
+    $action = $this->getAction('clear', 'field_string_multi', '');
+    $action->execute($node);
+    $this->assertCount(0, $node->get('field_string_multi'), 'The multi-value field must remain empty.');
+
+    $account_switcher->switchBack();
+  }
+
+  /**
+   * Tests that value options are hidden for the "clear" method.
+   */
+  public function testValueOptionsHiddenForClearMethod(): void {
+    /** @var \Drupal\eca_content\Plugin\Action\SetFieldValue $action */
+    $action = $this->getAction('clear', 'body', '');
+    $form_state = new FormState();
+    $form = $action->buildConfigurationForm([], $form_state);
+
+    // The "clear" method always empties the field and ignores any entered
+    // value, so the field value element must be hidden via a #states condition
+    // keyed on the method select equalling "clear".
+    $this->assertArrayHasKey('#states', $form['field_value'], 'The field value element defines a #states condition.');
+    $this->assertArrayHasKey('invisible', $form['field_value']['#states'], 'The field value element is conditionally invisible.');
+    $this->assertSame(
+      ['value' => 'clear'],
+      $form['field_value']['#states']['invisible'][':input[name="method"]'],
+      'The field value element becomes invisible when the "clear" method is selected.',
+    );
+
+    // Stripping tags only shapes a value being set, so it must be hidden via
+    // the same #states condition when the "clear" method is selected.
+    $this->assertArrayHasKey('#states', $form['strip_tags'], 'The strip tags element defines a #states condition.');
+    $this->assertArrayHasKey('invisible', $form['strip_tags']['#states'], 'The strip tags element is conditionally invisible.');
+    $this->assertSame(
+      ['value' => 'clear'],
+      $form['strip_tags']['#states']['invisible'][':input[name="method"]'],
+      'The strip tags element becomes invisible when the "clear" method is selected.',
+    );
+
+    // Trimming only shapes a value being set, so it must be hidden via the same
+    // #states condition when the "clear" method is selected.
+    $this->assertArrayHasKey('#states', $form['trim'], 'The trim element defines a #states condition.');
+    $this->assertArrayHasKey('invisible', $form['trim']['#states'], 'The trim element is conditionally invisible.');
+    $this->assertSame(
+      ['value' => 'clear'],
+      $form['trim']['#states']['invisible'][':input[name="method"]'],
+      'The trim element becomes invisible when the "clear" method is selected.',
+    );
+
+    // Saving the entity stays meaningful when clearing a field, so it must
+    // remain always visible and must not define a #states condition.
+    $this->assertArrayNotHasKey('#states', $form['save_entity'], 'Saving the entity stays meaningful when clearing, so it is always visible.');
   }
 
   /**

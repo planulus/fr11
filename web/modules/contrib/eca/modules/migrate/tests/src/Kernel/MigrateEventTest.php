@@ -256,7 +256,7 @@ class MigrateEventTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     // Create an invalid migration (user 2 name having invalid characters).
     $definition = [

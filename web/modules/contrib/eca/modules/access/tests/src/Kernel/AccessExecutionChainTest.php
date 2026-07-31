@@ -132,7 +132,7 @@ class AccessExecutionChainTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
     \Drupal::entityTypeManager()->getAccessControlHandler('node')->resetCache();
 
     /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher */
@@ -228,7 +228,7 @@ class AccessExecutionChainTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
     \Drupal::entityTypeManager()->getAccessControlHandler('node')->resetCache();
 
     /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher */
@@ -319,7 +319,7 @@ class AccessExecutionChainTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
     \Drupal::entityTypeManager()->getAccessControlHandler('node')->resetCache();
 
     $this->assertTrue($access_handler->createAccess('article'));
@@ -404,7 +404,7 @@ class AccessExecutionChainTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
     \Drupal::entityTypeManager()->getAccessControlHandler('node')->resetCache();
 
     $article = Node::create([

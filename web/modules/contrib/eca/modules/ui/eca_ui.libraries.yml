@@ -1,6 +1,6 @@
-debug:
+inspector:
   css:
     component:
-      css/eca_ui_debug.css: {}
+      css/eca_ui_inspector.css: {}
   dependencies:
     - core/drupal.htmx

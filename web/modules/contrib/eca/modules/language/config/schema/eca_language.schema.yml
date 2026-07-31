@@ -20,3 +20,20 @@ action.configuration.eca_set_current_langcode:
       constraints:
         Choice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidLangcodes'
+
+action.configuration.eca_create_entity_translation:
+  type: mapping
+  label: 'Configuration for the "Create Entity Translation" action'
+  mapping:
+    source_langcode:
+      type: string
+      label: 'Source language'
+      constraints:
+        Choice:
+          callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidLangcodes'
+    target_langcode:
+      type: string
+      label: 'Target language'
+      constraints:
+        Choice:
+          callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidLangcodes'

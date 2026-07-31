@@ -111,7 +111,7 @@ class EndpointControllerTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     $result = $controller->access(User::load(0), 'first', 'second');
     $this->assertTrue($result->isAllowed());
@@ -180,7 +180,7 @@ class EndpointControllerTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     $not_found = FALSE;
     try {
@@ -228,7 +228,7 @@ class EndpointControllerTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     $response = $controller->handle($request, User::load(1), 'first', 'second');
     $this->assertEquals('Hello from ECA!', $response->getContent());

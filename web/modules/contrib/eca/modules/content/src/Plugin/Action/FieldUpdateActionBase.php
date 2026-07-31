@@ -40,6 +40,18 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
   use PropertyPathTrait;
 
   /**
+   * {@inheritdoc}
+   *
+   * This base class replaces core's FieldUpdateActionBase via class_alias().
+   * Core actions (e.g. PromoteNode) that extend this base must remain visible
+   * outside ECA, so this returns TRUE. ECA-specific subclasses like
+   * SetFieldValue override this to return FALSE.
+   */
+  public static function externallyAvailable(): bool {
+    return TRUE;
+  }
+
+  /**
    * Gets an array of values to be set.
    *
    * @return array
@@ -69,6 +81,14 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
     if (!($this instanceof SetFieldValue)) {
       return $form;
     }
+    // The "clear" method (Empty the field value) ignores any value entered, so
+    // value-shaping options are hidden via #states when that method is
+    // selected.
+    $hidden_for_clear = [
+      'invisible' => [
+        ':input[name="method"]' => ['value' => 'clear'],
+      ],
+    ];
     $form['method'] = [
       '#type' => 'select',
       '#title' => $this->t('Method'),
@@ -86,6 +106,7 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
         'prepend:drop_first' => $this->t('Prepend and drop first when full'),
         'prepend:drop_last' => $this->t('Prepend and drop last when full'),
         'remove' => $this->t('Remove value instead of adding it'),
+        'clear' => $this->t('Empty the field value'),
       ],
       '#eca_token_select_option' => TRUE,
     ];
@@ -95,6 +116,9 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
       '#default_value' => $this->configuration['strip_tags'],
       '#description' => $this->t('Remove the tags or not.'),
       '#weight' => -30,
+      // Stripping tags only shapes a value being set, which is meaningless
+      // when the "clear" method discards any entered value.
+      '#states' => $hidden_for_clear,
     ];
     $form['trim'] = [
       '#type' => 'checkbox',
@@ -102,6 +126,9 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
       '#default_value' => $this->configuration['trim'],
       '#description' => $this->t('Trims the field value or not.'),
       '#weight' => -20,
+      // Trimming only shapes a value being set, which is meaningless when the
+      // "clear" method discards any entered value.
+      '#states' => $hidden_for_clear,
     ];
     $form['save_entity'] = [
       '#type' => 'checkbox',
@@ -209,30 +236,7 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
         unset($values[key($values)]);
       }
 
-      // Apply configured filters and normalize the array of values.
-      foreach ($values as $i => $value) {
-        if ($value instanceof TypedDataInterface) {
-          $value = $value->getValue();
-          $values[$i] = $value;
-        }
-        if (is_array($value) && ($is_property_name_explicit || (count($value) === 1))) {
-          $value = array_key_exists($property_name, $value) ? $value[$property_name] : reset($value);
-        }
-        if (is_scalar($value) || is_null($value)) {
-          if (!empty($this->configuration['strip_tags'])) {
-            $value = preg_replace('/[\t\n\r\0\x0B]/', '', strip_tags((string) $value));
-          }
-          if (!empty($this->configuration['trim'])) {
-            $value = trim((string) $value);
-          }
-          if ($value === '' || $value === NULL) {
-            unset($values[$i]);
-          }
-          else {
-            $values[$i] = [$property_name => $value];
-          }
-        }
-      }
+      $values = $this->normalizeFieldValues($values, $property_name, $is_property_name_explicit);
 
       // Custom filtering of field values is applied here, because some fields
       // do actually want to have an incomplete intermediary state of a field
@@ -259,7 +263,13 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
         ksort($values);
       }
 
-      if (empty($values) && !empty($current_values) && ($method === 'set:clear')) {
+      // The dedicated "clear" method always empties the field, while the
+      // "set:clear" method only empties it when no replacement value was
+      // provided and the field is not already empty (kept for backward
+      // compatibility). Field access is enforced separately in access().
+      $is_clear_method = ($method === 'clear') ||
+        (empty($values) && !empty($current_values) && ($method === 'set:clear'));
+      if ($is_clear_method) {
         // Shorthand for setting a field to be empty.
         if ($is_property_name_explicit) {
           $update_target->get($delta)->$property_name = NULL;
@@ -276,52 +286,7 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
       }
 
       // Create a map of indices that refer to the already existing counterpart.
-      $existing = [];
-      if (!in_array('force_clear', $method_settings, TRUE)) {
-        foreach ($current_values as $k => $current_item) {
-          if (($i = array_search($current_item, $values, TRUE)) !== FALSE) {
-            $existing[$i] = $k;
-            continue;
-          }
-
-          if (!is_array($current_item)) {
-            $current_value = $current_item;
-          }
-          elseif (array_key_exists($property_name, $current_item)) {
-            $current_value = $current_item[$property_name];
-          }
-          else {
-            $current_value = reset($current_item);
-          }
-          if (is_string($current_value)) {
-            // Extra processing is needed for strings, in order to prevent false
-            // comparison when dealing with values that are the same but
-            // encoded differently.
-            $current_value = nl2br(trim($current_value));
-          }
-
-          foreach ($values as $i => $value) {
-            if (!is_array($value)) {
-              $new_value = $value;
-            }
-            elseif (array_key_exists($property_name, $value)) {
-              $new_value = $value[$property_name];
-            }
-            else {
-              $new_value = reset($value);
-            }
-            if (is_string($new_value)) {
-              $new_value = nl2br(trim($new_value));
-            }
-            if (((is_object($new_value) && $current_value === $new_value) || ($current_value === $new_value)) && !isset($existing[$i]) && !in_array($k, $existing, TRUE)) {
-              $existing[$i] = $k;
-            }
-            if (($i === $k) && is_array($value) && is_array($current_item) && (reset($method_settings) === 'set')) {
-              $values[$i] += $current_item;
-            }
-          }
-        }
-      }
+      $existing = $this->identifyExistingIndices($current_values, $values, $property_name, $method_settings);
 
       if ((reset($method_settings) !== 'remove') && (count($existing) === count($values)) && (count($existing) === count($current_values))) {
         continue;
@@ -337,14 +302,7 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
             break;
 
           case 'clear':
-            $keep = [];
-            foreach ($existing as $k) {
-              $keep[$k] = $current_values[$k];
-            }
-            if (count($current_values) !== count($keep)) {
-              $values_changed = TRUE;
-            }
-            $current_values = $keep;
+            $this->executeClear($existing, $current_values, $values_changed);
             break;
 
           case 'empty':
@@ -366,35 +324,11 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
             break;
 
           case 'drop_first':
-            if (!$is_unlimited) {
-              $num_required = count($values) - count($existing) - ($cardinality - count($current_values));
-              $keep = array_flip($existing);
-              reset($current_values);
-              while ($num_required > 0 && ($k = key($current_values)) !== NULL) {
-                next($current_values);
-                $num_required--;
-                if (!isset($keep[$k])) {
-                  unset($current_values[$k]);
-                  $values_changed = TRUE;
-                }
-              }
-            }
+            $this->executeDropFirst($is_unlimited, $values, $existing, $cardinality, $current_values, $values_changed);
             break;
 
           case 'drop_last':
-            if (!$is_unlimited) {
-              $num_required = count($values) - count($existing) - ($cardinality - count($current_values));
-              $keep = array_flip($existing);
-              end($current_values);
-              while ($num_required > 0 && ($k = key($current_values)) !== NULL) {
-                prev($current_values);
-                $num_required--;
-                if (!isset($keep[$k])) {
-                  unset($current_values[$k]);
-                  $values_changed = TRUE;
-                }
-              }
-            }
+            $this->executeDropLast($is_unlimited, $values, $existing, $cardinality, $current_values, $values_changed);
             break;
 
         }
@@ -404,58 +338,19 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
         switch ($method_setting) {
 
           case 'set':
-            $current_num = count($current_values);
-            foreach ($values as $i => $value) {
-              if (($is_delta_explicit || ($is_property_name_explicit && ($delta === 0) && ($i === 0))) && !isset($existing[$i])) {
-                $current_values[$i] = $value;
-                $values_changed = TRUE;
-                continue;
-              }
-              if (!$is_unlimited && $cardinality <= $current_num) {
-                break;
-              }
-              if (!isset($existing[$i])) {
-                $current_num++;
-                $current_values[] = $value;
-                $values_changed = TRUE;
-              }
-            }
-            ksort($current_values);
+            $this->executeSet($current_values, $values, $is_delta_explicit, $is_property_name_explicit, $delta, $existing, $is_unlimited, $cardinality, $values_changed);
             break;
 
           case 'append':
-            $current_num = count($current_values);
-            foreach ($values as $i => $value) {
-              if (!$is_unlimited && $cardinality <= $current_num) {
-                break;
-              }
-              if (!isset($existing[$i])) {
-                $current_values[] = $value;
-                $current_num++;
-                $values_changed = TRUE;
-              }
-            }
+            $this->executeAppend($current_values, $values, $is_unlimited, $cardinality, $existing, $values_changed);
             break;
 
           case 'prepend':
-            $current_num = count($current_values);
-            foreach (array_reverse($values, TRUE) as $i => $value) {
-              if (!$is_unlimited && $cardinality <= $current_num) {
-                break;
-              }
-              if (!isset($existing[$i])) {
-                array_unshift($current_values, $value);
-                $current_num++;
-                $values_changed = TRUE;
-              }
-            }
+            $this->executePrepend($current_values, $values, $is_unlimited, $cardinality, $existing, $values_changed);
             break;
 
           case 'remove':
-            foreach ($existing as $k) {
-              unset($current_values[$k]);
-              $values_changed = TRUE;
-            }
+            $this->executeRemove($existing, $current_values, $values_changed);
             break;
 
         }
@@ -475,6 +370,316 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
     foreach ($all_entities_to_save as $to_save) {
       $this->save($to_save);
     }
+  }
+
+  /**
+   * Handles the "clear" operation.
+   *
+   * @param array $existing
+   *   The map of existing indices.
+   * @param array $current_values
+   *   The current field values.
+   * @param bool $values_changed
+   *   Whether the values have changed.
+   */
+  private function executeClear(array $existing, array &$current_values, bool &$values_changed): void {
+    $keep = [];
+    foreach ($existing as $k) {
+      $keep[$k] = $current_values[$k];
+    }
+    if (count($current_values) !== count($keep)) {
+      $values_changed = TRUE;
+    }
+    $current_values = $keep;
+  }
+
+  /**
+   * Handles the "drop_first" removal operation.
+   *
+   * @param bool $is_unlimited
+   *   Whether the field has unlimited cardinality.
+   * @param array $values
+   *   The new values.
+   * @param array $existing
+   *   The map of existing indices.
+   * @param int $cardinality
+   *   The field cardinality.
+   * @param array $current_values
+   *   The current field values.
+   * @param bool $values_changed
+   *   Whether the values have changed.
+   */
+  private function executeDropFirst(bool $is_unlimited, array $values, array $existing, int $cardinality, array &$current_values, bool &$values_changed): void {
+    if (!$is_unlimited) {
+      $num_required = count($values) - count($existing) - ($cardinality - count($current_values));
+      $keep = array_flip($existing);
+      reset($current_values);
+      while ($num_required > 0 && ($k = key($current_values)) !== NULL) {
+        next($current_values);
+        $num_required--;
+        if (!isset($keep[$k])) {
+          unset($current_values[$k]);
+          $values_changed = TRUE;
+        }
+      }
+    }
+  }
+
+  /**
+   * Handles the "drop_last" removal operation.
+   *
+   * @param bool $is_unlimited
+   *   Whether the field has unlimited cardinality.
+   * @param array $values
+   *   The new values.
+   * @param array $existing
+   *   The map of existing indices.
+   * @param int $cardinality
+   *   The field cardinality.
+   * @param array $current_values
+   *   The current field values.
+   * @param bool $values_changed
+   *   Whether the values have changed.
+   */
+  private function executeDropLast(bool $is_unlimited, array $values, array $existing, int $cardinality, array &$current_values, bool &$values_changed): void {
+    if (!$is_unlimited) {
+      $num_required = count($values) - count($existing) - ($cardinality - count($current_values));
+      $keep = array_flip($existing);
+      end($current_values);
+      while ($num_required > 0 && ($k = key($current_values)) !== NULL) {
+        prev($current_values);
+        $num_required--;
+        if (!isset($keep[$k])) {
+          unset($current_values[$k]);
+          $values_changed = TRUE;
+        }
+      }
+    }
+  }
+
+  /**
+   * Handles the "set" operation.
+   *
+   * @param array $current_values
+   *   The current field values.
+   * @param array $values
+   *   The new values.
+   * @param bool $is_delta_explicit
+   *   Whether the delta is explicit.
+   * @param bool $is_property_name_explicit
+   *   Whether the property name is explicit.
+   * @param int $delta
+   *   The delta.
+   * @param array $existing
+   *   The map of existing indices.
+   * @param bool $is_unlimited
+   *   Whether the field has unlimited cardinality.
+   * @param int $cardinality
+   *   The field cardinality.
+   * @param bool $values_changed
+   *   Whether the values have changed.
+   */
+  private function executeSet(array &$current_values, array $values, bool $is_delta_explicit, bool $is_property_name_explicit, int $delta, array $existing, bool $is_unlimited, int $cardinality, bool &$values_changed): void {
+    $current_num = count($current_values);
+    foreach ($values as $i => $value) {
+      if (($is_delta_explicit || ($is_property_name_explicit && ($delta === 0) && ($i === 0))) && !isset($existing[$i])) {
+        $current_values[$i] = $value;
+        $values_changed = TRUE;
+        continue;
+      }
+      if (!$is_unlimited && $cardinality <= $current_num) {
+        break;
+      }
+      if (!isset($existing[$i])) {
+        $current_num++;
+        $current_values[] = $value;
+        $values_changed = TRUE;
+      }
+    }
+    ksort($current_values);
+  }
+
+  /**
+   * Handles the "append" operation.
+   *
+   * @param array $current_values
+   *   The current field values.
+   * @param array $values
+   *   The new values.
+   * @param bool $is_unlimited
+   *   Whether the field has unlimited cardinality.
+   * @param int $cardinality
+   *   The field cardinality.
+   * @param array $existing
+   *   The map of existing indices.
+   * @param bool $values_changed
+   *   Whether the values have changed.
+   */
+  private function executeAppend(array &$current_values, array $values, bool $is_unlimited, int $cardinality, array $existing, bool &$values_changed): void {
+    $current_num = count($current_values);
+    foreach ($values as $i => $value) {
+      if (!$is_unlimited && $cardinality <= $current_num) {
+        break;
+      }
+      if (!isset($existing[$i])) {
+        $current_values[] = $value;
+        $current_num++;
+        $values_changed = TRUE;
+      }
+    }
+  }
+
+  /**
+   * Handles the "prepend" operation.
+   *
+   * @param array $current_values
+   *   The current field values.
+   * @param array $values
+   *   The new values.
+   * @param bool $is_unlimited
+   *   Whether the field has unlimited cardinality.
+   * @param int $cardinality
+   *   The field cardinality.
+   * @param array $existing
+   *   The map of existing indices.
+   * @param bool $values_changed
+   *   Whether the values have changed.
+   */
+  private function executePrepend(array &$current_values, array $values, bool $is_unlimited, int $cardinality, array $existing, bool &$values_changed): void {
+    $current_num = count($current_values);
+    foreach (array_reverse($values, TRUE) as $i => $value) {
+      if (!$is_unlimited && $cardinality <= $current_num) {
+        break;
+      }
+      if (!isset($existing[$i])) {
+        array_unshift($current_values, $value);
+        $current_num++;
+        $values_changed = TRUE;
+      }
+    }
+  }
+
+  /**
+   * Handles the "remove" operation.
+   *
+   * @param array $existing
+   *   The map of existing indices.
+   * @param array $current_values
+   *   The current field values.
+   * @param bool $values_changed
+   *   Whether the values have changed.
+   */
+  private function executeRemove(array $existing, array &$current_values, bool &$values_changed): void {
+    foreach ($existing as $k) {
+      unset($current_values[$k]);
+      $values_changed = TRUE;
+    }
+  }
+
+  /**
+   * Normalizes the field values.
+   *
+   * @param array $values
+   *   The values to be normalized.
+   * @param string $property_name
+   *   The name of the property.
+   * @param bool $is_property_name_explicit
+   *   Whether the property name is explicit.
+   *
+   * @return array
+   *   The normalized values.
+   */
+  private function normalizeFieldValues(array $values, string $property_name, bool $is_property_name_explicit): array {
+    foreach ($values as $i => $value) {
+      if ($value instanceof TypedDataInterface) {
+        $value = $value->getValue();
+        $values[$i] = $value;
+      }
+      if (is_array($value) && ($is_property_name_explicit || (count($value) === 1))) {
+        $value = array_key_exists($property_name, $value) ? $value[$property_name] : reset($value);
+      }
+      if (is_scalar($value) || is_null($value)) {
+        if (!empty($this->configuration['strip_tags'])) {
+          $value = preg_replace('/[\t\n\r\0\x0B]/', '', strip_tags((string) $value));
+        }
+        if (!empty($this->configuration['trim'])) {
+          $value = trim((string) $value);
+        }
+        if ($value === '' || $value === NULL) {
+          unset($values[$i]);
+        }
+        else {
+          $values[$i] = [$property_name => $value];
+        }
+      }
+    }
+    return $values;
+  }
+
+  /**
+   * Identifies the existing indices.
+   *
+   * @param array $current_values
+   *   The current field values.
+   * @param array $values
+   *   The new values. Modified in place: entries may be enriched with existing
+   *   item data for 'set' operations.
+   * @param string $property_name
+   *   The name of the property.
+   * @param array $method_settings
+   *   The method settings.
+   *
+   * @return array
+   *   The map of existing indices.
+   */
+  private function identifyExistingIndices(array $current_values, array &$values, string $property_name, array $method_settings): array {
+    $existing = [];
+    if (!in_array('force_clear', $method_settings, TRUE)) {
+      foreach ($current_values as $k => $current_item) {
+        if (($i = array_search($current_item, $values, TRUE)) !== FALSE) {
+          $existing[$i] = $k;
+          continue;
+        }
+
+        if (!is_array($current_item)) {
+          $current_value = $current_item;
+        }
+        elseif (array_key_exists($property_name, $current_item)) {
+          $current_value = $current_item[$property_name];
+        }
+        else {
+          $current_value = reset($current_item);
+        }
+        if (is_string($current_value)) {
+          // Extra processing is needed for strings, in order to prevent false
+          // comparison when dealing with values that are the same but
+          // encoded differently.
+          $current_value = nl2br(trim($current_value));
+        }
+
+        foreach ($values as $i => $value) {
+          if (!is_array($value)) {
+            $new_value = $value;
+          }
+          elseif (array_key_exists($property_name, $value)) {
+            $new_value = $value[$property_name];
+          }
+          else {
+            $new_value = reset($value);
+          }
+          if (is_string($new_value)) {
+            $new_value = nl2br(trim($new_value));
+          }
+          if (((is_object($new_value) && $current_value === $new_value) || ($current_value === $new_value)) && !isset($existing[$i]) && !in_array($k, $existing, TRUE)) {
+            $existing[$i] = $k;
+          }
+          if (($i === $k) && is_array($value) && is_array($current_item) && (reset($method_settings) === 'set')) {
+            $values[$i] += $current_item;
+          }
+        }
+      }
+    }
+    return $existing;
   }
 
   /**

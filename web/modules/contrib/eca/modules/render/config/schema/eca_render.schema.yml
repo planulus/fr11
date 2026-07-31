@@ -290,6 +290,31 @@ action.configuration.eca_render_custom_form:
       constraints:
         NotBlank: []
 
+action.configuration.eca_render_link:
+  type: eca_render.action_base
+  label: 'Configuration for the "Render Link" action'
+  mapping:
+    title:
+      type: string
+      label: 'Title'
+    url:
+      type: string
+      label: 'URL'
+      constraints:
+        NotBlank: []
+    link_type:
+      type: string
+      label: 'Link type'
+    width:
+      type: string
+      label: 'Width'
+    display_as:
+      type: string
+      label: 'Display as'
+    absolute:
+      type: boolean
+      label: 'Enforce absolute'
+
 action.configuration.eca_render_dropbutton:
   type: eca_render.action_base
   label: 'Configuration for the "Render Dropbutton" action'

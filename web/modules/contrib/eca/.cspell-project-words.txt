@@ -12,6 +12,7 @@ conditionid
 cplain
 customprop
 danse
+dedup
 deutschsprachiger
 ecaid
 ecalabel
@@ -26,6 +27,8 @@ fromstate
 greaterthan
 grienauer
 hiddenfield
+htmx
+hx
 idmap
 idplaceholder
 ifnotexists
@@ -34,6 +37,7 @@ keyvalueexpirablestore
 keyvaluestore
 lessthan
 maxage
+merkle
 mkdocs
 modeldata
 modelid
@@ -64,6 +68,7 @@ nodocs
 nonexistentfield
 nwdug
 optionsfield
+phpunitmodule
 pluginid
 postbuild
 postexecute

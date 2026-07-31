@@ -57,3 +57,25 @@ action.configuration.eca_access_set_result:
           - forbidden
           - allowed
           - neutral
+
+action.configuration.eca_access_set_file_download_result:
+  type: mapping
+  label: 'Configuration for the "Set file download access result" action'
+  mapping:
+    access_result:
+      type: string
+      label: 'Access result'
+      constraints:
+        Choice:
+          - forbidden
+          - allowed
+          - neutral
+    headers:
+      type: string
+      label: 'HTTP headers'
+    use_yaml:
+      type: boolean
+      label: 'Interpret headers value as YAML format'
+    validate_yaml:
+      type: boolean
+      label: 'Validate YAML to prevent this from being executed when invalid'

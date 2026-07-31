@@ -147,12 +147,12 @@ class Translate extends ConfigurableActionBase {
     if ($translatable) {
       if (is_array($value)) {
         array_walk_recursive($value, function (&$v) use (&$target_langcode) {
-          // @codingStandardsIgnoreLine
+          // phpcs:ignore Drupal.Semantics.FunctionT.NotLiteralString
           $v = $this->t($v, [], ['langcode' => $target_langcode]);
         });
       }
       else {
-        // @codingStandardsIgnoreLine
+        // phpcs:ignore Drupal.Semantics.FunctionT.NotLiteralString
         $value = $this->t($value, [], ['langcode' => $target_langcode]);
       }
     }

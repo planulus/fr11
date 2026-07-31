@@ -186,3 +186,31 @@ action.configuration.eca_token_load_route_param:
     raw_value:
       type: boolean
       label: 'Get raw value'
+
+action.configuration.eca_build_url_from_route:
+  type: mapping
+  label: 'Configuration for the "Build URL from route" action'
+  mapping:
+    token_name:
+      type: label
+      label: 'Name of token'
+    route_name:
+      type: string
+      label: 'Route name'
+    parameters:
+      type: string
+      label: 'Route parameters'
+    options:
+      type: string
+      label: 'Additional options'
+    absolute:
+      type: boolean
+      label: 'Generate absolute URL'
+
+action.configuration.eca_misc_set_page_title:
+  type: mapping
+  label: 'Configuration for the "Set page title" action'
+  mapping:
+    title:
+      type: text
+      label: 'Title'

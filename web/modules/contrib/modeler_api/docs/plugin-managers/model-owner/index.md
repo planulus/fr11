@@ -224,10 +224,47 @@ public function modelConstraints(): array {
 | `successors` | `array` | Nested constraint for outgoing connections per component |
 | `successors.min` | `int` | Minimum number of successors each component of this type must have |
 | `successors.max` | `int` | Maximum number of successors each component of this type may have (`0` = no successors allowed) |
+| `successors.requireConditionWhenParallel` | `bool` | Opt-in. When `TRUE`, any group of two or more successors of the same component that share the same target must each carry a non-empty `conditionId`. Defaults to `FALSE`. |
 
 All keys are optional. Omitting a key means "no constraint" for that dimension.
 Returning an empty array (the default in `ModelOwnerBase`) means no constraints
 at all.
+
+### Parallel successors with conditions (opt-in)
+
+By default, the modeler API permits multiple successors between the same
+source and target component. Each successor carries an optional `conditionId`
+(see `Drupal\modeler_api\ComponentSuccessor`). For some model owners --
+notably ECA -- multiple parallel successors only make sense when every one of
+them carries a condition. Without conditions on all of them, the runtime
+semantics are degenerate (the same target would be invoked multiple times
+unconditionally) and the model is structurally meaningless.
+
+To enable this rule for a given component type, set
+`successors.requireConditionWhenParallel` to `TRUE`:
+
+```php
+public function modelConstraints(): array {
+  return [
+    Api::COMPONENT_TYPE_ELEMENT => [
+      'successors' => [
+        'max' => 10,
+        'requireConditionWhenParallel' => TRUE,
+      ],
+    ],
+  ];
+}
+```
+
+When the flag is set, `Api::validateModelConstraints()` groups each
+component's successors by target ID and requires every group of size `> 1`
+to have a non-empty `conditionId` on every member. Other model owners are
+unaffected -- the default value is `FALSE`, so existing behavior does not
+change.
+
+The flag is forwarded to the frontend as part of the `model_constraints`
+settings payload, so the modeler UI can mirror the check in
+`validateBeforeSave()` for fast pre-save feedback.
 
 ### Validation error messages
 
@@ -243,6 +280,10 @@ on the constraint value:
 - `"@label "@name" requires at least @min successor(s)."` (successor min)
 - `"@label "@name" must not have any successors."` (when successor `max` is 0)
 - `"@label "@name" allows at most @max successor(s)."` (successor max > 0)
+- `'@label "@name" has parallel successors to "@target" without a
+  condition on every edge. When multiple edges connect the same source
+  and target, each edge must carry a condition.'` (parallel successors
+  opt-in)
 
 ## ComponentWrapperPlugin
 

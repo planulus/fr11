@@ -11,6 +11,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Hook\Attribute\Hook;
+use Drupal\Core\Hook\Order\Order;
 use Drupal\eca\Event\TriggerEvent;
 use Drupal\eca\Service\ContentEntityTypes;
 
@@ -145,7 +146,7 @@ class ContentHooks {
   /**
    * Implements hook_entity_update().
    */
-  #[Hook('entity_update')]
+  #[Hook('entity_update', order: Order::Last)]
   public function entityUpdate(EntityInterface $entity): void {
     if ($entity instanceof ContentEntityInterface) {
       if ($entity->getEntityType()->hasKey('revision')) {

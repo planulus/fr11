@@ -10,6 +10,7 @@ use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Form\FormState;
+use Drupal\Core\Render\RendererInterface;
 use Drupal\eca\Entity\Eca;
 use Drupal\eca\Plugin\ECA\Condition\ConditionInterface;
 use Drupal\eca\Plugin\ECA\Event\EventInterface;
@@ -100,6 +101,9 @@ final class DocsCommands extends DrushCommands {
     protected ExportRecipe $exportRecipe,
     #[Autowire(service: 'plugin.manager.modeler_api.model_owner')]
     private readonly ModelOwnerPluginManager $modelOwnerPluginManager,
+    protected RendererInterface $renderer,
+    #[Autowire(service: 'twig')]
+    protected TwigEnvironment $twig,
   ) {
     parent::__construct();
     $this->twigLoader = new TwigLoader();
@@ -156,12 +160,34 @@ final class DocsCommands extends DrushCommands {
   /**
    * Update the TOC file identified by $key.
    *
+   * The freshly generated TOC is merged append-only with any TOC that already
+   * exists on disk: existing entries that are missing from the new TOC are
+   * preserved, while freshly generated values always win on key conflicts.
+   * This guarantees that previously documented plugins or models are never
+   * dropped from the navigation, even when they can no longer be discovered
+   * during the current run.
+   *
    * @param string $key
    *   The key for the TOC to update.
    */
   private function updateToc(string $key): void {
     $filename = '../mkdocs/toc/' . $key . '.yml';
-    // @todo Merge with potentially existing TOC,
+
+    // Merge with a potentially existing TOC on disk, append-only. The existing
+    // navigation list is converted back into the internal weighted assoc-map
+    // shape and merged into the freshly generated TOC so that the existing
+    // transform below produces the exact same output format as before.
+    if (is_file($filename)) {
+      $existingContent = file_get_contents($filename);
+      if ($existingContent !== '') {
+        $existingNav = Yaml::decode($existingContent);
+        if (is_array($existingNav)) {
+          $existingToc = $this->navToToc($existingNav, TRUE);
+          $this->mergeTocAppendOnly($this->toc, $existingToc);
+        }
+      }
+    }
+
     $this->sortNestedArrayAssoc($this->toc);
     $content = Yaml::encode($this->toc);
     $content = '- ' . $key . '/index.md' . PHP_EOL . str_replace(
@@ -172,6 +198,75 @@ final class DocsCommands extends DrushCommands {
       return $matches[0] . '- ';
     }, $content);
     file_put_contents($filename, substr($content, 0, -2));
+  }
+
+  /**
+   * Converts a navigation list back into the internal weighted assoc-map.
+   *
+   * This is the inverse of the transform applied in ::updateToc(): it takes a
+   * decoded mkdocs navigation list and rebuilds the weighted, associative TOC
+   * structure held in $this->toc, so that an existing on-disk TOC can be
+   * merged with a freshly generated one.
+   *
+   * @param array $nav
+   *   The decoded navigation list.
+   * @param bool $top
+   *   Whether $nav is the top level of the navigation list. At the top level
+   *   the synthetic leading "{key}/index.md" link is skipped and the "ECA"
+   *   section is mapped back to its weighted "0-ECA" key.
+   *
+   * @return array
+   *   The navigation list expressed as a weighted assoc-map.
+   */
+  private function navToToc(array $nav, bool $top): array {
+    $out = [];
+    foreach ($nav as $item) {
+      if (!is_array($item)) {
+        // Scalar string entries are index links. At the top level this is the
+        // synthetic leading "{key}/index.md" link prepended in ::updateToc(),
+        // which must not be added back. Otherwise it is a provider index link.
+        if (!$top) {
+          $out['0-placeholder'] = $item;
+        }
+        continue;
+      }
+      $navKey = array_key_first($item);
+      $val = $item[$navKey];
+      $weightedKey = match ($navKey) {
+        'Events' => '1-Events',
+        'Conditions' => '2-Conditions',
+        'Actions' => '3-Actions',
+        'ECA' => $top ? '0-ECA' : $navKey,
+        default => $navKey,
+      };
+      $out[$weightedKey] = is_array($val) ? $this->navToToc($val, FALSE) : $val;
+    }
+    return $out;
+  }
+
+  /**
+   * Deep-merges a source TOC into a target TOC, append-only.
+   *
+   * Only entries that are missing from $target are added from $source. When a
+   * key exists in both and both values are arrays, the merge recurses. When a
+   * key exists in both but the values are not both arrays (leaf links or a
+   * type mismatch), the existing $target value is kept, so freshly generated
+   * values always win on conflict.
+   *
+   * @param array $target
+   *   The freshly generated TOC to merge into. Modified by reference.
+   * @param array $source
+   *   The existing TOC to merge from.
+   */
+  private function mergeTocAppendOnly(array &$target, array $source): void {
+    foreach ($source as $key => $value) {
+      if (!array_key_exists($key, $target)) {
+        $target[$key] = $value;
+      }
+      elseif (is_array($target[$key]) && is_array($value)) {
+        $this->mergeTocAppendOnly($target[$key], $value);
+      }
+    }
   }
 
   /**
@@ -339,15 +434,15 @@ final class DocsCommands extends DrushCommands {
         case 'markup':
         case 'container':
           if (isset($def['#markup']) && !str_starts_with($key, 'eca_token_')) {
-            $extraDescriptions[] = (string) $def['#markup'];
+            $extraDescriptions[] = $this->toMarkupString($def['#markup']);
           }
           continue 2;
 
         default:
           $fields[] = [
             'name' => $key,
-            'label' => $def['#title'] ?? $key,
-            'description' => $def['#description'] ?? '',
+            'label' => $this->toMarkupString($def['#title'] ?? $key),
+            'description' => $this->toMarkupString($def['#description'] ?? ''),
           ];
       }
     }
@@ -356,6 +451,46 @@ final class DocsCommands extends DrushCommands {
     $values['fields'] = $fields;
     $values['extraDescriptions'] = $extraDescriptions;
     return $values;
+  }
+
+  /**
+   * Safely converts a form property value into a plain string.
+   *
+   * Form properties such as #title, #description and #markup may be a string,
+   * a stringable object (e.g. TranslatableMarkup) or a full render array. When
+   * a render array is echoed directly by Twig, PHP raises an "Array to string
+   * conversion" warning, so render arrays are rendered to a string first.
+   *
+   * @param mixed $value
+   *   The raw form property value.
+   *
+   * @return string
+   *   The value as a plain string. NULL becomes an empty string.
+   */
+  private function toMarkupString(mixed $value): string {
+    if ($value === NULL) {
+      return '';
+    }
+    if (is_array($value)) {
+      // Temporarily disable Twig debug so the rendered HTML is not polluted
+      // with THEME DEBUG comments on dev sites where twig.config.debug is on.
+      // The core "twig" service is the same environment used during theme
+      // rendering, and isDebug() is read live at render time. Restore the
+      // original state afterwards, even if rendering throws.
+      $debug = $this->twig->isDebug();
+      if ($debug) {
+        $this->twig->disableDebug();
+      }
+      try {
+        return (string) $this->renderer->renderInIsolation($value);
+      }
+      finally {
+        if ($debug) {
+          $this->twig->enableDebug();
+        }
+      }
+    }
+    return (string) $value;
   }
 
   /**

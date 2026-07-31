@@ -74,6 +74,32 @@ class EcaModelConstraintsTest extends TestCase {
   }
 
   /**
+   * Tests that allowConditionReuse is TRUE for all constrained types.
+   */
+  public function testAllowConditionReuseIsEnabled(): void {
+    $constraints = $this->ecaModelOwner->modelConstraints();
+    $expectedTypes = [
+      Api::COMPONENT_TYPE_START,
+      Api::COMPONENT_TYPE_ELEMENT,
+      Api::COMPONENT_TYPE_GATEWAY,
+    ];
+
+    foreach ($expectedTypes as $type) {
+      self::assertArrayHasKey('successors', $constraints[$type], sprintf(
+        'Component type %d should have a "successors" constraint.',
+        $type,
+      ));
+      self::assertTrue(
+        $constraints[$type]['successors']['allowConditionReuse'],
+        sprintf(
+          'Component type %d should have allowConditionReuse set to TRUE.',
+          $type,
+        ),
+      );
+    }
+  }
+
+  /**
    * Tests that LINK type is not constrained (conditions themselves).
    */
   public function testLinkTypeNotConstrained(): void {

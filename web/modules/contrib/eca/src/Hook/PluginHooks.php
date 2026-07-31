@@ -12,7 +12,7 @@ use Drupal\eca\PluginManager\Action;
 class PluginHooks {
 
   /**
-   * Constructs a new ActionHooks object.
+   * Constructs a new PluginHooks object.
    *
    * @param \Drupal\eca\PluginManager\Action $actionPluginManager
    *   The ECA action plugin manager.

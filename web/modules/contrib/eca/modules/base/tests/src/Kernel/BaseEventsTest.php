@@ -114,7 +114,7 @@ class BaseEventsTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     unset(ArrayIncrement::$array['base_inc']);
 

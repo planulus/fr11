@@ -13,7 +13,7 @@ use Drupal\views\Views;
 use Symfony\Component\Routing\Route;
 
 /**
- * Checks access for displaying configuration translation page.
+ * Checks access for Views pages using ECA access control.
  */
 class AccessCheck implements AccessInterface {
 

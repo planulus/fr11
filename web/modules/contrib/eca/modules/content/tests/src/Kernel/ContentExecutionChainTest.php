@@ -233,7 +233,7 @@ class ContentExecutionChainTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     // Switch to privileged account.
     $account_switcher->switchTo(User::load(1));
@@ -261,7 +261,7 @@ class ContentExecutionChainTest extends KernelTestBase {
     // user. That user only has update access to the published node, therefore
     // the unpublished one must not be changed by ECA.
     // Disable the ECA config first to do some value resets without executing.
-    $ecaConfig->disable()->trustData()->save();
+    $ecaConfig->disable()->save();
     $published_node->title->value = 'Published node';
     $published_node->save();
     $published_node = Node::load($published_node->id());
@@ -270,7 +270,7 @@ class ContentExecutionChainTest extends KernelTestBase {
     $unpublished_node = Node::load($unpublished_node->id());
     $this->assertEquals('Published node', $published_node->label(), 'Published node title must remain unchanged.');
     $this->assertEquals('Unpublished node', $unpublished_node->label(), 'Unpublished node title must remain unchanged.');
-    $ecaConfig->enable()->trustData()->save();
+    $ecaConfig->enable()->save();
 
     // Now switch to a non-privileged account.
     $account_switcher->switchTo(User::load(2));
@@ -292,7 +292,7 @@ class ContentExecutionChainTest extends KernelTestBase {
     $this->assertEquals('Unpublished node', $unpublished_node->label(), 'Unpublished node title must remain unchanged, as it is not accessible.');
 
     // Reset the values once more and do another test with unprivileged user.
-    $ecaConfig->disable()->trustData()->save();
+    $ecaConfig->disable()->save();
     $published_node->title->value = 'Published node';
     $published_node->save();
     $published_node = Node::load($published_node->id());
@@ -301,7 +301,7 @@ class ContentExecutionChainTest extends KernelTestBase {
     $unpublished_node = Node::load($unpublished_node->id());
     $this->assertEquals('Published node', $published_node->label(), 'Published node title must remain unchanged.');
     $this->assertEquals('Unpublished node', $unpublished_node->label(), 'Unpublished node title must remain unchanged.');
-    $ecaConfig->enable()->trustData()->save();
+    $ecaConfig->enable()->save();
 
     // Delete the unpublished node, so that it's not available anymore.
     $unpublished_node->delete();
@@ -437,7 +437,7 @@ class ContentExecutionChainTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     $node = Node::create([
       'type' => 'article',
@@ -581,7 +581,7 @@ class ContentExecutionChainTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     /** @var \Drupal\node\NodeInterface $article */
     $article = Node::create([
@@ -694,7 +694,7 @@ class ContentExecutionChainTest extends KernelTestBase {
       'content' => $form_display->get('content'),
       'hidden' => $form_display->get('hidden'),
       'dependencies' => $form_display->get('dependencies'),
-    ])->trustData()->setSyncing(TRUE)->save();
+    ])->setSyncing(TRUE)->save();
 
     // Create two article nodes for referencing.
     $nids = [];
@@ -835,7 +835,7 @@ YAML,
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     $article = Node::create([
       'type' => 'article',

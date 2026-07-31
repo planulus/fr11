@@ -16,6 +16,7 @@ services:
       - '@modeler_api.context_list_builder'
       - '@modeler_api.dependency_list_builder'
       - '@modeler_api.template_token_list_builder'
+      - '@router.no_access_checks'
       - !service_closure '@entity_type.manager'
       - !service_closure '@router.route_provider'
       - !service_closure '@token'

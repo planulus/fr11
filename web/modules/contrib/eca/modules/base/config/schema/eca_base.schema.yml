@@ -322,6 +322,20 @@ action.configuration.eca_list_delete_data:
       type: string
       label: 'Token containing the list'
 
+action.configuration.eca_list_combine:
+  type: mapping
+  label: 'Configuration for the "List Merge" action'
+  mapping:
+    merged_list:
+      type: string
+      label: 'The name of the new token, containing the combined list'
+    list_token_left:
+      type: string
+      label: 'Token containing the first list'
+    list_token_right:
+      type: string
+      label: 'Token containing the second list'
+
 action.configuration.eca_list_remove:
   type: mapping
   label: 'Configuration for the "List Remove" action'
@@ -353,6 +367,29 @@ action.configuration.eca_list_save_data:
   type: mapping
   label: 'Configuration for the "List Save Data" action'
   mapping:
+    list_token:
+      type: string
+      label: 'Token containing the list'
+
+action.configuration.eca_list_sort:
+  type: mapping
+  label: 'Configuration for the "List Sort" action'
+  mapping:
+    sort_method:
+      type: string
+      label: 'Sort method'
+      constraints:
+        NotBlank: []
+        Choice:
+          - asort
+          - arsort
+          - ksort
+          - krsort
+          - natsort
+          - natcasesort
+    token_name:
+      type: label
+      label: 'Name of token'
     list_token:
       type: string
       label: 'Token containing the list'

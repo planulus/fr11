@@ -7,7 +7,7 @@ dependencies:
   - drupal:migrate
   - eca:eca_migrate
 
-# Information added by Drupal.org packaging script on 2026-05-05
-version: '3.1.2'
+# Information added by Drupal.org packaging script on 2026-07-08
+version: '3.1.4'
 project: 'eca'
-datestamp: 1777999266
+datestamp: 1783519950

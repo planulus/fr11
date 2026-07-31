@@ -3,5 +3,7 @@ services:
     class: Drupal\eca_ui\EventSubscriber\EcaEventCollector
     arguments:
       - '@state'
+      - '@current_user'
+      - '@router.route_provider'
     tags:
       - { name: event_subscriber }

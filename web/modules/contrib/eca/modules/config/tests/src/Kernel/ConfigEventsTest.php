@@ -110,7 +110,7 @@ class ConfigEventsTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     $system_settings = \Drupal::configFactory()->getEditable('system.site');
     $system_settings->set('name', 'My ECA site');
@@ -158,7 +158,7 @@ class ConfigEventsTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     ArrayIncrement::$array['inc'] = 0;
 
@@ -264,7 +264,7 @@ class ConfigEventsTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     // Set up the ConfigImporter object for testing.
     $storage_comparer = new StorageComparer(

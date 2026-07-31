@@ -102,7 +102,7 @@ class ProcessorTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher */
     $event_dispatcher = \Drupal::service('event_dispatcher');
@@ -245,7 +245,7 @@ class ProcessorTest extends KernelTestBase {
     $actions = $eca_config->get('actions');
     $actions['write_array_1']['configuration']['value'] = $random_value_2;
     $eca_config->set('actions', $actions);
-    $eca_config->trustData()->save();
+    $eca_config->save();
     \Drupal::entityTypeManager()->getStorage('eca')->resetCache();
 
     $action_manager->createInstance('eca_test_array_write', [
@@ -299,7 +299,7 @@ class ProcessorTest extends KernelTestBase {
     $conditions = $eca_config->get('conditions');
     $conditions['array_has_key_value_pair']['configuration']['value'] = $random_value;
     $eca_config->set('conditions', $conditions);
-    $eca_config->trustData()->save();
+    $eca_config->save();
     \Drupal::entityTypeManager()->getStorage('eca')->resetCache();
 
     $action_manager->createInstance('eca_test_array_write', [
@@ -316,7 +316,7 @@ class ProcessorTest extends KernelTestBase {
     $events = $eca_config->get('events');
     $events['array_write']['configuration']['value'] = $random_value;
     $eca_config->set('events', $events);
-    $eca_config->trustData()->save();
+    $eca_config->save();
     \Drupal::entityTypeManager()->getStorage('eca')->resetCache();
 
     $action_manager->createInstance('eca_test_array_write', [
@@ -399,7 +399,7 @@ class ProcessorTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher */
     $event_dispatcher = \Drupal::service('event_dispatcher');

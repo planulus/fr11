@@ -48,6 +48,7 @@ class KernelEventTest extends KernelTestBase {
    * {@inheritdoc}
    */
   public function setUp(): void {
+    Eca::setTesting();
     parent::setUp();
     $this->installEntitySchema('user');
     $this->installSchema('user', ['users_data']);
@@ -244,7 +245,7 @@ class KernelEventTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher */
     $event_dispatcher = \Drupal::service('event_dispatcher');

@@ -176,7 +176,7 @@ class EnqueueTaskTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     /** @var \Drupal\Core\Queue\QueueWorkerManagerInterface $queue_worker_manager */
     $queue_worker_manager = \Drupal::service('plugin.manager.queue_worker');
@@ -205,7 +205,7 @@ class EnqueueTaskTest extends KernelTestBase {
     // the newly created task item and therefore create another item.
     $eca_config_values['id'] .= '_2';
     $eca_config_values['events']['event_queue']['configuration']['task_name'] = 'another_task';
-    Eca::create($eca_config_values)->trustData()->save();
+    Eca::create($eca_config_values)->save();
     $this->assertSame(1, $queue->numberOfItems(), 'Queue must be unchanged.');
     $queue_worker->processItem($task);
     $this->assertSame(2, $queue->numberOfItems(), 'Queue must now have one more item.');
@@ -217,7 +217,7 @@ class EnqueueTaskTest extends KernelTestBase {
     $eca_config_values['id'] .= '_3';
     $eca_config_values['events']['event_queue']['configuration']['task_name'] = 'another_task';
     $eca_config_values['events']['event_queue']['configuration']['task_value'] = 'my_task_value';
-    Eca::create($eca_config_values)->trustData()->save();
+    Eca::create($eca_config_values)->save();
     $queue_worker->processItem($task);
     $this->assertSame(4, $queue->numberOfItems(), 'Queue must now have two more items, because two configurations create one item each.');
     // Create another ECA config, that one will react upon the name of
@@ -227,7 +227,7 @@ class EnqueueTaskTest extends KernelTestBase {
     $eca_config_values['id'] .= '_4';
     $eca_config_values['events']['event_queue']['configuration']['task_name'] = 'another_task';
     $eca_config_values['events']['event_queue']['configuration']['task_value'] = 'my_task_value__nonexistent';
-    Eca::create($eca_config_values)->trustData()->save();
+    Eca::create($eca_config_values)->save();
     $queue_worker->processItem($task);
     $this->assertSame(6, $queue->numberOfItems(), 'Queue must now have two more items, because two configurations react upon that.');
 
@@ -284,7 +284,7 @@ class EnqueueTaskTest extends KernelTestBase {
     $eca_config_values['events']['event_queue']['configuration']['task_value'] = (string) $node->id();
     $eca_config_values['actions']['action_enqueue']['configuration']['task_name'] = 'node_task_follow';
     $eca_config_values['actions']['action_enqueue']['configuration']['task_value'] = '[node:nid]';
-    Eca::create($eca_config_values)->trustData()->save();
+    Eca::create($eca_config_values)->save();
     $queue_worker->processItem($task);
     $queue->deleteItem($item);
     $this->assertSame(1, $queue->numberOfItems(), 'Queue must have exactly one item, created by the last ECA config.');

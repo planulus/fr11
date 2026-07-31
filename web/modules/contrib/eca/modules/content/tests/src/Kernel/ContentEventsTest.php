@@ -48,6 +48,7 @@ class ContentEventsTest extends KernelTestBase {
    * {@inheritdoc}
    */
   public function setUp(): void {
+    Eca::setTesting();
     parent::setUp();
     $this->installEntitySchema('user');
     $this->installSchema('user', ['users_data']);
@@ -150,7 +151,7 @@ class ContentEventsTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     $this->createContentType([
       'type' => 'type1',
@@ -537,7 +538,7 @@ class ContentEventsTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     $node = Node::create([
       'title' => 'English node',

@@ -124,7 +124,7 @@ class WorkflowEventsTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     $node = Node::create([
       'title' => 'Test node',

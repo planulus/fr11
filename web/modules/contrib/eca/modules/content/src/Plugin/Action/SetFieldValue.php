@@ -24,6 +24,15 @@ class SetFieldValue extends FieldUpdateActionBase implements EcaFieldUpdateActio
 
   /**
    * {@inheritdoc}
+   *
+   * This is an ECA-only action and must not be exposed externally.
+   */
+  public static function externallyAvailable(): bool {
+    return FALSE;
+  }
+
+  /**
+   * {@inheritdoc}
    */
   protected function getFieldsToUpdate() {
     $name = $this->tokenService->replace($this->configuration['field_name']);
@@ -64,7 +73,7 @@ class SetFieldValue extends FieldUpdateActionBase implements EcaFieldUpdateActio
       '#title' => $this->t('Field name'),
       '#description' => $this->t('The machine name of the field, that should be changed. Example: <em>body.value</em>'),
       '#default_value' => $this->configuration['field_name'],
-      '#weight' => -20,
+      '#weight' => -50,
       '#eca_token_replacement' => TRUE,
     ];
     $form['field_value'] = [
@@ -72,8 +81,18 @@ class SetFieldValue extends FieldUpdateActionBase implements EcaFieldUpdateActio
       '#title' => $this->t('Field value'),
       '#description' => $this->t('The new field value.'),
       '#default_value' => $this->configuration['field_value'],
-      '#weight' => -10,
+      '#weight' => -45,
       '#eca_token_replacement' => TRUE,
+      // The "clear" method (Empty the field value) always empties the field and
+      // ignores any value entered here, so this field is hidden via #states
+      // keyed on the method select when that method is selected - matching the
+      // convention used by other ECA action forms (e.g. the HTMX response
+      // header action).
+      '#states' => [
+        'invisible' => [
+          ':input[name="method"]' => ['value' => 'clear'],
+        ],
+      ],
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

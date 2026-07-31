@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BlockTypeSelect,
   CreateLink,
@@ -57,9 +57,17 @@ function Editor({
   initialValue,
   onChange,
   variables = [],
+  onRef,
 }) {
   const editorRef = useRef(null);
   const [markdown, setMarkdown] = useState(initialValue);
+
+  useEffect(() => {
+    if (onRef && editorRef.current) {
+      onRef(editorRef.current);
+    }
+  }, [onRef]);
+  const isDarkMode = document.documentElement.classList.contains('gin--dark-mode');
 
   function handleChange(value) {
     setMarkdown(value);
@@ -81,6 +89,7 @@ function Editor({
         ref={editorRef}
         markdown={markdown}
         onChange={handleChange}
+        className={isDarkMode ? 'dark' : ''}
         plugins={[
           headingsPlugin(),
           listsPlugin(),

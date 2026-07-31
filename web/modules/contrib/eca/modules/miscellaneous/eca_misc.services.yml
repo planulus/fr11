@@ -5,3 +5,4 @@ services:
       - '@event_dispatcher'
     tags:
       - { name: event_subscriber }
+  Drupal\eca_misc\PageTitleStore: ~

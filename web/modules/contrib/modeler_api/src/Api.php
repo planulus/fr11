@@ -29,6 +29,7 @@ use Drupal\modeler_api\Plugin\ModelOwnerPluginManager;
 use Drupal\modeler_api\Plugin\TemplateTokenPluginManager;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Symfony\Component\Routing\Route;
+use Symfony\Component\Routing\RouterInterface;
 
 /**
  * Provides services of the modeler API.
@@ -102,6 +103,7 @@ class Api {
     protected ContextListBuilder $contextListBuilder,
     protected DependencyListBuilder $dependencyListBuilder,
     protected TemplateTokenListBuilder $templateTokenListBuilder,
+    protected RouterInterface $router,
     protected \Closure $entityTypeManagerFactory,
     protected \Closure $routeProviderFactory,
     protected \Closure $tokenFactory,
@@ -513,10 +515,19 @@ class Api {
       // Count components by type for cardinality constraint validation.
       $type = $component->getType();
       $componentTypeCounts[$type] = ($componentTypeCounts[$type] ?? 0) + 1;
+      $successors = $component->getSuccessors();
+      $successorInfo = [];
+      foreach ($successors as $successor) {
+        $successorInfo[] = [
+          'targetId' => $successor->getId(),
+          'conditionId' => $successor->getConditionId(),
+        ];
+      }
       $successorCountsByType[$type][] = [
         'id' => $component->getId(),
         'label' => $component->getLabel(),
-        'count' => count($component->getSuccessors()),
+        'count' => count($successors),
+        'successors' => $successorInfo,
       ];
       if ($errors = $component->validate()) {
         $this->errors = array_merge($this->errors, $errors);
@@ -578,8 +589,10 @@ class Api {
    *   The model owner.
    * @param array<int, int> $componentTypeCounts
    *   Component counts keyed by component type constant.
-   * @param array<int, array<int, array{id: string, label: string, count: int}>> $successorCountsByType
-   *   Per-type list of component successor info.
+   * @param array<int, array<int, array{id: string, label: string, count: int, successors: array<int, array{targetId: string, conditionId: string}>}>> $successorCountsByType
+   *   Per-type list of component successor info. The 'successors' sub-array
+   *   contains one entry per outgoing edge, with the target component ID and
+   *   the condition ID (empty string when no condition is set).
    */
   protected function validateModelConstraints(ModelOwnerInterface $owner, array $componentTypeCounts, array $successorCountsByType): void {
     $constraints = $owner->modelConstraints();
@@ -635,6 +648,33 @@ class Api {
                 '@name' => $info['label'],
                 '@max' => $sConstraint['max'],
               ]);
+          }
+          // Validate the opt-in "parallel successors require conditions" rule.
+          // When two or more successors of the same component point at the
+          // same target, every one of them must carry a non-empty conditionId.
+          // Otherwise the runtime semantics are degenerate (the same target
+          // would be invoked multiple times unconditionally).
+          if (!empty($sConstraint['requireConditionWhenParallel']) && !empty($info['successors'])) {
+            $byTarget = [];
+            foreach ($info['successors'] as $successorInfo) {
+              $byTarget[$successorInfo['targetId']][] = $successorInfo;
+            }
+            foreach ($byTarget as $targetId => $group) {
+              if (count($group) < 2) {
+                continue;
+              }
+              foreach ($group as $successorInfo) {
+                if ($successorInfo['conditionId'] === '') {
+                  $this->errors[] = (string) $this->t('@label "@name" has parallel successors to "@target" without a condition on every edge. When multiple edges connect the same source and target, each edge must carry a condition.', [
+                    '@label' => $label,
+                    '@name' => $info['label'],
+                    '@target' => $targetId,
+                  ]);
+                  // One error per (source, target) pair is enough.
+                  break;
+                }
+              }
+            }
           }
         }
       }
@@ -857,16 +897,19 @@ class Api {
    *   The menu name of the parent path, if we can find it, FALSE otherwise.
    */
   public function getParentMenuName(string $path): ?string {
-    $parts = explode('/', trim($path, '/'));
-    array_pop($parts);
-    $path = implode('/', $parts);
-    $url = Url::fromUri('internal:/' . $path);
-    $links = $this->menuLinkManager->loadLinksByRoute($url->getRouteName(), $url->getRouteParameters());
-    if (!empty($links)) {
-      $menuLink = reset($links);
-      return $menuLink->getPluginId();
+    // Strip the last path segment to get the parent path.
+    $parentPath = substr($path, 0, strrpos(trim($path, '/'), '/'));
+    if (empty($parentPath)) {
+      return NULL;
     }
-    return NULL;
+
+    try {
+      $result = $this->router->match('/' . $parentPath);
+      return $result['_route'] ?? NULL;
+    }
+    catch (\Exception) {
+      return NULL;
+    }
   }
 
   /**

@@ -77,7 +77,7 @@ class Action extends ActionManager {
    */
   protected function getEntityTypeManager(): EntityTypeManagerInterface {
     if (!isset($this->entityTypeManager)) {
-      // @codingStandardsIgnoreLine @phpstan-ignore-next-line
+      // phpcs:ignore -- @phpstan-ignore-next-line
       $this->entityTypeManager = \Drupal::entityTypeManager();
     }
     return $this->entityTypeManager;

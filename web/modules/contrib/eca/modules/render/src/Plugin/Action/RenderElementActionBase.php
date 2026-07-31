@@ -89,7 +89,7 @@ abstract class RenderElementActionBase extends RenderActionBase {
         if ($name === '') {
           break;
         }
-
+        // Intentional fall-through.
       case 'set:clear':
         if ($name === '') {
           $target = $build;

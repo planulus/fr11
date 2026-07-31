@@ -94,7 +94,7 @@ final class AiGuardrail extends ConfigEntityBase implements AiGuardrailEntityInt
    *
    * @var \Drupal\ai\Guardrail\AiGuardrailInterface|null
    */
-  private ?AiGuardrailInterface $guardrail_plugin = NULL;
+  protected ?AiGuardrailInterface $guardrail_plugin = NULL;
 
   /**
    * Returns the guardrail plugin instance.

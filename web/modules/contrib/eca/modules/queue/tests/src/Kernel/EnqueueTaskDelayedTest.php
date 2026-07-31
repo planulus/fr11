@@ -142,7 +142,7 @@ class EnqueueTaskDelayedTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     /** @var \Drupal\Core\Queue\QueueWorkerManagerInterface $queue_worker_manager */
     $queue_worker_manager = \Drupal::service('plugin.manager.queue_worker');
@@ -186,7 +186,7 @@ class EnqueueTaskDelayedTest extends KernelTestBase {
     // therefore the queue must remain unchanged.
     $eca_config_values['id'] .= '_2';
     $eca_config_values['events']['event_queue']['configuration']['task_name'] = 'another_task';
-    Eca::create($eca_config_values)->trustData()->save();
+    Eca::create($eca_config_values)->save();
     $this->assertSame(1, $queue->numberOfItems(), 'Queue must be unchanged.');
     $exception = NULL;
     try {

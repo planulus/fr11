@@ -103,7 +103,7 @@ class ConfigurableLoggerChannel extends LoggerChannel {
    */
   protected function token(): TokenInterface {
     if ($this->token === NULL) {
-      // @codingStandardsIgnoreLine @phpstan-ignore-next-line
+      // phpcs:ignore -- @phpstan-ignore-next-line
       $this->token = \Drupal::service('eca.service.token');
     }
     return $this->token;

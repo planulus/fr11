@@ -14,7 +14,11 @@ use Drupal\eca_base\Event\CustomEvent;
 use Drupal\eca_language\Plugin\LanguageNegotiation\EcaLanguageNegotiation;
 use Drupal\language\ConfigurableLanguageManagerInterface;
 use Drupal\language\Entity\ConfigurableLanguage;
+use Drupal\language\Entity\ContentLanguageSettings;
 use Drupal\locale\StringStorageInterface;
+use Drupal\node\Entity\Node;
+use Drupal\Tests\node\Traits\ContentTypeCreationTrait;
+use Drupal\user\Entity\User;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use function current;
 use function parse_url;
@@ -28,6 +32,8 @@ use PHPUnit\Framework\Attributes\Group;
 #[RunTestsInSeparateProcesses]
 class LanguageTest extends KernelTestBase {
 
+  use ContentTypeCreationTrait;
+
   /**
    * {@inheritdoc}
    */
@@ -35,12 +41,16 @@ class LanguageTest extends KernelTestBase {
     'system',
     'user',
     'field',
+    'filter',
+    'text',
+    'node',
     'eca',
     'language',
     'locale',
     'eca_language',
     'eca_base',
     'modeler_api',
+    'content_translation',
   ];
 
   /**
@@ -70,11 +80,16 @@ class LanguageTest extends KernelTestBase {
   public function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('user');
+    $this->installEntitySchema('node');
+    $this->installSchema('node', ['node_access']);
     $this->installConfig(static::$modules);
     ConfigurableLanguage::createFromLangcode('de')->save();
     $this->localeStorage = $this->container->get('locale.storage');
     $this->languageManager = $this->container->get('language_manager');
     $this->tokenService = $this->container->get('eca.token_services');
+    // The superuser (uid 1) bypasses entity access, so the action's
+    // access() entity-level checks resolve to allowed in the happy path.
+    User::create(['uid' => 1, 'name' => 'admin'])->save();
   }
 
   /**
@@ -126,7 +141,7 @@ class LanguageTest extends KernelTestBase {
       ],
     ];
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     /** @var \Drupal\Core\Action\ActionManager $action_manager */
     $action_manager = \Drupal::service('plugin.manager.action');
@@ -204,7 +219,7 @@ class LanguageTest extends KernelTestBase {
     ];
 
     $ecaConfig = Eca::create($eca_config_values);
-    $ecaConfig->trustData()->save();
+    $ecaConfig->save();
 
     // Language is default.
     $this->assertEquals('en', $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_URL)->getId());
@@ -223,6 +238,136 @@ class LanguageTest extends KernelTestBase {
     // also url token use this language.
     $messages = $this->container->get('messenger')->messagesByType(MessengerInterface::TYPE_STATUS);
     $this->assertEquals('/de', parse_url((string) current($messages), PHP_URL_PATH));
+  }
+
+  /**
+   * Tests the happy path of the "eca_create_entity_translation" action.
+   */
+  public function testCreateEntityTranslation(): void {
+    $this->createTranslatableArticleType();
+
+    /** @var \Drupal\Core\Action\ActionManager $action_manager */
+    $action_manager = \Drupal::service('plugin.manager.action');
+    /** @var \Drupal\content_translation\ContentTranslationManagerInterface $translation_manager */
+    $translation_manager = \Drupal::service('content_translation.manager');
+    /** @var \Drupal\Core\Session\AccountSwitcherInterface $account_switcher */
+    $account_switcher = \Drupal::service('account_switcher');
+
+    $node = Node::create([
+      'type' => 'article',
+      'title' => 'Hello!',
+      'langcode' => 'en',
+      'uid' => 1,
+      'status' => 1,
+    ]);
+    $node->save();
+
+    // Switch to the superuser so the entity-level 'create' access check in
+    // access() resolves to allowed.
+    $account_switcher->switchTo(User::load(1));
+
+    $action = $action_manager->createInstance('eca_create_entity_translation', [
+      'source_langcode' => 'en',
+      'target_langcode' => 'de',
+    ]);
+
+    // The action only runs when access() grants it, so verify that first.
+    $this->assertTrue($action->access($node), 'Access is granted for a valid translation request.');
+
+    $action->execute($node);
+
+    // The German translation now exists and is pre-filled from the source.
+    $this->assertTrue($node->hasTranslation('de'), 'The target translation was created.');
+    $translation = $node->getTranslation('de');
+    $this->assertEquals('Hello!', $translation->label(), 'The translation is pre-filled from the source.');
+
+    // The new translation is flagged as outdated ("needs to be updated").
+    $metadata = $translation_manager->getTranslationMetadata($translation);
+    $this->assertTrue($metadata->isOutdated(), 'The new translation is marked as outdated.');
+    $this->assertEquals('en', $metadata->getSource(), 'The source language is recorded on the translation.');
+
+    $account_switcher->switchBack();
+  }
+
+  /**
+   * Tests the access() guards of the "eca_create_entity_translation" action.
+   */
+  public function testCreateEntityTranslationAccess(): void {
+    /** @var \Drupal\Core\Action\ActionManager $action_manager */
+    $action_manager = \Drupal::service('plugin.manager.action');
+
+    // A non-translatable object must be forbidden.
+    $action = $action_manager->createInstance('eca_create_entity_translation', [
+      'source_langcode' => 'en',
+      'target_langcode' => 'de',
+    ]);
+    $config_entity = ConfigurableLanguage::load('de');
+    $this->assertFalse($action->access($config_entity), 'Access is forbidden for a non-translatable entity.');
+
+    // Content translation not enabled for the type/bundle must be forbidden.
+    $this->createContentType([
+      'type' => 'page',
+      'name' => 'Page',
+    ]);
+    $page = Node::create([
+      'type' => 'page',
+      'title' => 'No translation here',
+      'langcode' => 'en',
+      'uid' => 1,
+      'status' => 1,
+    ]);
+    $page->save();
+    $action = $action_manager->createInstance('eca_create_entity_translation', [
+      'source_langcode' => 'en',
+      'target_langcode' => 'de',
+    ]);
+    $this->assertFalse($action->access($page), 'Access is forbidden when content translation is not enabled.');
+
+    // Identical source and target languages must be forbidden.
+    $this->createTranslatableArticleType();
+    $node = Node::create([
+      'type' => 'article',
+      'title' => 'Hello!',
+      'langcode' => 'en',
+      'uid' => 1,
+      'status' => 1,
+    ]);
+    $node->save();
+    $action = $action_manager->createInstance('eca_create_entity_translation', [
+      'source_langcode' => 'en',
+      'target_langcode' => 'en',
+    ]);
+    $this->assertFalse($action->access($node), 'Access is forbidden when source and target languages are identical.');
+
+    // An already existing target translation must be forbidden.
+    $node->addTranslation('de', [
+      'title' => 'Hallo!',
+      'langcode' => 'de',
+    ])->save();
+    $action = $action_manager->createInstance('eca_create_entity_translation', [
+      'source_langcode' => 'en',
+      'target_langcode' => 'de',
+    ]);
+    $this->assertFalse($action->access($node), 'Access is forbidden when the target translation already exists.');
+  }
+
+  /**
+   * Creates a translation-enabled "article" content type.
+   */
+  protected function createTranslatableArticleType(): void {
+    $this->createContentType([
+      'type' => 'article',
+      'name' => 'Article',
+    ]);
+    ContentLanguageSettings::create([
+      'id' => 'node.article',
+      'target_entity_type_id' => 'node',
+      'target_bundle' => 'article',
+      'default_langcode' => LanguageInterface::LANGCODE_DEFAULT,
+      'language_alterable' => TRUE,
+    ])->save();
+    \Drupal::service('content_translation.manager')
+      ->setEnabled('node', 'article', TRUE);
   }
 
 }

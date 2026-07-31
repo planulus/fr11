@@ -69,8 +69,8 @@ final class Update {
             $config = $usedComponent->getConfiguration();
             $componentChanged = FALSE;
             foreach ($defaultConfig as $key => $value) {
-              if (!isset($config['configuration'][$key])) {
-                $config['configuration'][$key] = $value;
+              if (!array_key_exists($key, $config)) {
+                $config[$key] = $value;
                 $componentChanged = TRUE;
               }
             }

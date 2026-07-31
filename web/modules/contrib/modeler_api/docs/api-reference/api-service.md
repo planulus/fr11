@@ -192,7 +192,7 @@ attached to `drupalSettings.modeler_api`:
 | `metadata` | `object` | Model metadata (version, label, description, storage, executable, template, tags, changelog) |
 | `component_labels` | `object` | Human-readable singular labels for each component type, from `ModelOwnerInterface::componentLabels()` |
 | `component_labels_plural` | `object` | Human-readable plural labels for each component type, from `ModelOwnerInterface::componentLabelsPlural()` |
-| `model_constraints` | `object` | Cardinality constraints for component types keyed by type name string (e.g. `start`, `element`). Each entry may contain `min`, `max`, and `successors` (with its own `min`/`max`). From `ModelOwnerInterface::modelConstraints()`. |
+| `model_constraints` | `object` | Cardinality constraints for component types keyed by type name string (e.g. `start`, `element`). Each entry may contain `min`, `max`, and `successors` (with its own `min`/`max`, plus an optional opt-in `requireConditionWhenParallel` boolean). From `ModelOwnerInterface::modelConstraints()`. |
 | `permissions` | `object` | Current user's permissions for this modeler |
 | `favorite_components` | `array` | Preferred component plugin IDs from the Model Owner |
 | `global_tokens` | `object` | Global Drupal token tree (requires `drupal/token`) |

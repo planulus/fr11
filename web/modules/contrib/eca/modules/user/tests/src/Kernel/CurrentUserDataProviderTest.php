@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\Tests\eca\Kernel;
+namespace Drupal\Tests\eca_user\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\user\Entity\User;
