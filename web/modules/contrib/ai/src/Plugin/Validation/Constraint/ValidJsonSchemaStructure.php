@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace Drupal\ai\Plugin\Validation\Constraint;
 
-use Symfony\Component\Validator\Constraint;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\Validation\Attribute\Constraint;
+use Symfony\Component\Validator\Constraint as SymfonyConstraint;
 
 /**
  * Validates a JSON Schema structure.
- *
- * @Constraint(
- *   id = "ValidJsonSchemaStructure",
- *   label = @Translation("Valid JSON Schema Structure", context = "Validation"),
- *   type = { "array", "string" }
- * )
  */
-class ValidJsonSchemaStructure extends Constraint {
+#[Constraint(
+  id: 'ValidJsonSchemaStructure',
+  label: new TranslatableMarkup('Valid JSON Schema Structure', [], ['context' => 'Validation']),
+  type: [
+    'array',
+    'string',
+  ]
+)]
+class ValidJsonSchemaStructure extends SymfonyConstraint {
 
   /**
    * The validation message.

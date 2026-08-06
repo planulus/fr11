@@ -4,18 +4,21 @@ declare(strict_types=1);
 
 namespace Drupal\ai\Plugin\Validation\Constraint;
 
-use Symfony\Component\Validator\Constraint;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\Validation\Attribute\Constraint;
+use Symfony\Component\Validator\Constraint as SymfonyConstraint;
 
 /**
  * Validates a structured output schema.
- *
- * @Constraint(
- *   id = "ValidStructuredOutputSchema",
- *   label = @Translation("Valid Structured Output Schema", context = "Validation"),
- *   type = { "array" }
- * )
  */
-class ValidStructuredOutputSchema extends Constraint {
+#[Constraint(
+  id: 'ValidStructuredOutputSchema',
+  label: new TranslatableMarkup('Valid structured output schema', [], ['context' => 'Validation']),
+  type: [
+    'array',
+  ]
+)]
+class ValidStructuredOutputSchema extends SymfonyConstraint {
 
   /**
    * The validation message.

@@ -4,18 +4,21 @@ declare(strict_types=1);
 
 namespace Drupal\ai\Plugin\Validation\Constraint;
 
-use Symfony\Component\Validator\Constraint;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\Validation\Attribute\Constraint;
+use Symfony\Component\Validator\Constraint as SymfonyConstraint;
 
 /**
  * Validates against a JSON Schema.
- *
- * @Constraint(
- *   id = "AiValidator",
- *   label = @Translation("AI Validator", context = "Validation"),
- *   type = { "string" }
- * )
  */
-class AiJsonSchemaConstraint extends Constraint {
+#[Constraint(
+  id: 'AiValidator',
+  label: new TranslatableMarkup('AI Validator', [], ['context' => 'Validation']),
+  type: [
+    'string',
+  ]
+)]
+class AiJsonSchemaConstraint extends SymfonyConstraint {
 
   /**
    * The validation message.

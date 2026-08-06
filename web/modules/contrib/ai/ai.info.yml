@@ -9,7 +9,7 @@ dependencies:
   - key:key
   - drupal:file
 
-# Information added by Drupal.org packaging script on 2026-07-22
-version: '1.4.5'
+# Information added by Drupal.org packaging script on 2026-08-05
+version: '1.4.6'
 project: 'ai'
-datestamp: 1784730313
+datestamp: 1785944937

@@ -20,6 +20,7 @@ import {
   UndoRedo,
   BoldItalicUnderlineToggles,
   toolbarPlugin,
+  directivesPlugin,
 } from "@mdxeditor/editor";
 import { typeaheadPlugin } from "@mdxeditor/typeahead-plugin";
 
@@ -28,6 +29,7 @@ import { TypeaheadEditor } from "../utils/typeahead";
 import {
   getTypeToTrigger,
   markdownDirectivesToPlain,
+  unescapeTokens,
 } from "../utils/typeaheadUtils";
 
 import "@mdxeditor/editor/style.css";
@@ -73,9 +75,11 @@ function Editor({
     setMarkdown(value);
     if (onChange) {
       onChange(
-        markdownDirectivesToPlain(
-          value,
-          getTypeToTrigger(getTypeaheadConfigs(variables)),
+        unescapeTokens(
+          markdownDirectivesToPlain(
+            value,
+            getTypeToTrigger(getTypeaheadConfigs(variables)),
+          ),
         ),
       );
     }
@@ -140,6 +144,12 @@ function Editor({
           variables.length > 0 && typeaheadPlugin({
             configs: getTypeaheadConfigs(variables),
           }),
+          // Registered after typeaheadPlugin so its own recognized directive
+          // names are still matched first; any other textDirective (e.g. a
+          // raw Drupal token like [node:title] typed directly, whose colon
+          // the directive grammar misreads as a trigger) degrades to plain
+          // text instead of throwing a parse error.
+          variables.length > 0 && directivesPlugin({ escapeUnknownTextDirectives: true }),
         ]}
       />
     </div>
