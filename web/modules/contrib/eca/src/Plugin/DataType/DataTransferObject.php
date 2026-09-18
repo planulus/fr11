@@ -23,6 +23,7 @@ use Drupal\Core\TypedData\TraversableTypedDataInterface;
 use Drupal\Core\TypedData\TypedDataInterface;
 use Drupal\Core\Url;
 use Drupal\eca\TypedData\DataTransferObjectDefinition;
+use Symfony\Component\Routing\Exception\ExceptionInterface as RoutingException;
 
 /**
  * Defines the "dto" data type.
@@ -38,6 +39,15 @@ use Drupal\eca\TypedData\DataTransferObjectDefinition;
   definition_class: DataTransferObjectDefinition::class
 )]
 class DataTransferObject extends Map {
+
+  /**
+   * Maximum nesting level when preparing array values for Yaml encoding.
+   *
+   * A property may hold an arbitrary array, including one that contains
+   * itself. Traversing that without a limit would exhaust memory, both when
+   * converting the contained values and in Yaml::encode() afterwards.
+   */
+  protected const MAX_ENCODING_DEPTH = 32;
 
   /**
    * A manually set string representation of this object.
@@ -288,31 +298,12 @@ class DataTransferObject extends Map {
       }
       if (empty($values['types']) || empty($values['values'])) {
         foreach ($values as $name => $value) {
-          if (!($value instanceof TypedDataInterface)) {
-            if ($value instanceof EntityInterface) {
-              $values[$name] = $this->wrapEntityValue($name, $value);
-            }
-            elseif (is_scalar($value)) {
-              $values[$name] = $this->wrapScalarValue($name, $value);
-            }
-            elseif (is_iterable($value)) {
-              $values[$name] = $this->wrapIterableValue($name, $value);
-            }
-            elseif (is_null($value)) {
-              unset($values[$name]);
-            }
-            elseif ($value instanceof MarkupInterface) {
-              $values[$name] = $this->wrapScalarValue($name, (string) $value);
-            }
-            elseif ($value instanceof Url) {
-              $values[$name] = $this->wrapUrlValue($name, $value);
-            }
-            elseif (is_object($value) && method_exists($value, '__toString')) {
-              $values[$name] = $this->wrapAnyValue($name, $value);
-            }
-            else {
-              throw new \InvalidArgumentException("Invalid values given. Values must be of scalar types, entities, stringable or typed data objects.");
-            }
+          $value = $this->wrapValue($name, $value);
+          if ($value === NULL) {
+            unset($values[$name]);
+          }
+          else {
+            $values[$name] = $value;
           }
         }
       }
@@ -391,17 +382,20 @@ class DataTransferObject extends Map {
         // Objects are not supported for being encoded to Yaml.
         $value = $property->getString();
       }
-      if (($value === NULL) || ($value === '') || (is_iterable($value) && !count($value))) {
+      // Any object got replaced by its string representation above, so an
+      // iterable value can only be an array at this point.
+      if (is_array($value)) {
+        if (!$value) {
+          // Skip empty items.
+          continue;
+        }
+        // Convert contained entities and other objects at any nesting level,
+        // so that the value can safely be encoded to Yaml below.
+        $value = $this->prepareValueForEncoding($value);
+      }
+      elseif (($value === NULL) || ($value === '')) {
         // Skip empty items.
         continue;
-      }
-      if (is_array($value)) {
-        // Convert entities to arrays for Yaml encoding below.
-        foreach ($value as $k => $v) {
-          if ($v instanceof EntityInterface) {
-            $value[$k] = $v->toArray();
-          }
-        }
       }
       if (is_int($name) || ctype_digit($name)) {
         $values[] = $value;
@@ -417,6 +411,74 @@ class DataTransferObject extends Map {
       $values = array_values($values);
     }
     return $values ? Yaml::encode($values) : '';
+  }
+
+  /**
+   * Prepares an array value for being encoded to Yaml.
+   *
+   * Yaml::encode() refuses to dump objects, so every object contained in the
+   * given array is replaced, at any nesting level:
+   * - Entities are expanded to their array representation.
+   * - URLs are rendered, just like ::writePropertyValue() wraps them into the
+   *   'eca_url' data type, whose ::getString() renders them the same way. A
+   *   nested URL printing a marker while a top level one renders properly
+   *   would be the same accept-but-cannot-render inconsistency that the
+   *   handling here is about. Generating a URL can fail, for example for a
+   *   route that no longer exists, in which case the marker below is used.
+   * - Stringable objects are cast to their string form. This is consistent
+   *   with ::writePropertyValue(), which already accepts such objects as
+   *   property values. \Drupal\Component\Render\MarkupInterface extends
+   *   \Stringable, so render markup is covered by the same branch, which is
+   *   why the URL branch precedes it as it does in ::writePropertyValue().
+   * - Any other object has no representation to fall back to and is replaced
+   *   by a marker naming its class. Such a value is neither dropped silently
+   *   nor allowed to make ::getString() throw.
+   *
+   * @param array $value
+   *   The array to prepare.
+   * @param int $depth
+   *   The current nesting level. Traversal stops at ::MAX_ENCODING_DEPTH, so
+   *   that an array containing itself cannot be traversed endlessly.
+   *
+   * @return array
+   *   The prepared array, which is free of objects and finite in depth.
+   */
+  protected function prepareValueForEncoding(array $value, int $depth = 1): array {
+    // Build up a new array rather than modifying the given one. An array
+    // element may be a reference, in which case assigning to it would write
+    // through to the value held by this object, and to the caller's data.
+    $prepared = [];
+    foreach ($value as $k => $v) {
+      if ($v instanceof EntityInterface) {
+        $v = $v->toArray();
+      }
+      if (is_array($v)) {
+        $prepared[$k] = $depth < static::MAX_ENCODING_DEPTH
+          ? $this->prepareValueForEncoding($v, $depth + 1)
+          : '[maximum nesting level of ' . static::MAX_ENCODING_DEPTH . ' reached]';
+      }
+      elseif ($v instanceof Url) {
+        try {
+          $prepared[$k] = $v->toString();
+        }
+        catch (RoutingException | \InvalidArgumentException) {
+          // Every routing exception extends \InvalidArgumentException, which
+          // the unrouted URL assembler throws as well. Catching the routing
+          // interface too keeps this working if that hierarchy ever changes.
+          $prepared[$k] = '[object ' . get_debug_type($v) . ']';
+        }
+      }
+      elseif ($v instanceof \Stringable) {
+        $prepared[$k] = (string) $v;
+      }
+      elseif (is_object($v)) {
+        $prepared[$k] = '[object ' . get_debug_type($v) . ']';
+      }
+      else {
+        $prepared[$k] = $v;
+      }
+    }
+    return $prepared;
   }
 
   /**
@@ -459,8 +521,19 @@ class DataTransferObject extends Map {
         }
       }
     }
-    elseif ($value instanceof TypedDataInterface) {
-      if (isset($this->properties[$property_name])) {
+    else {
+      $value = $this->wrapValue($property_name, $value);
+      if ($value === NULL) {
+        // When receiving NULL as unwrapped $value, then handle this just like
+        // removing the property from the list.
+        unset($this->properties[$property_name]);
+        // @todo $property name can never be integer, can it?
+        // @phpstan-ignore-next-line
+        if (is_int($property_name) || ctype_digit((string) $property_name)) {
+          $this->rekey((int) $property_name);
+        }
+      }
+      elseif (isset($this->properties[$property_name])) {
         $this->properties[$property_name]->setValue($value->getValue());
       }
       elseif ($property_name === '+') {
@@ -475,40 +548,51 @@ class DataTransferObject extends Map {
         }
       }
     }
-    elseif ($value === NULL) {
-      // When receiving NULL as unwrapped $value, then handle this just like
-      // removing the property from the list.
-      unset($this->properties[$property_name]);
-      // @todo $property name can never be integer, can it?
-      // @phpstan-ignore-next-line
-      if (is_int($property_name) || ctype_digit((string) $property_name)) {
-        $this->rekey((int) $property_name);
-      }
+  }
+
+  /**
+   * Wraps a value in a Typed Data object.
+   *
+   * @param int|string $name
+   *   The property name.
+   * @param mixed $value
+   *   The value to wrap.
+   *
+   * @return \Drupal\Core\TypedData\TypedDataInterface|null
+   *   The wrapped value, or NULL when the value should be removed.
+   *
+   * @throws \InvalidArgumentException
+   *   If the value cannot be wrapped.
+   */
+  protected function wrapValue(int|string $name, mixed $value): ?TypedDataInterface {
+    if ($value instanceof TypedDataInterface) {
+      return $value;
     }
-    elseif ($value instanceof EntityInterface) {
-      $this->writePropertyValue($property_name, $this->wrapEntityValue($property_name, $value));
+    if ($value === NULL) {
+      return NULL;
     }
-    elseif ($value instanceof Config) {
-      $this->writePropertyValue($property_name, $this->wrapConfigValue($property_name, $value));
+    if ($value instanceof EntityInterface) {
+      return $this->wrapEntityValue($name, $value);
     }
-    elseif (is_scalar($value)) {
-      $this->writePropertyValue($property_name, $this->wrapScalarValue($property_name, $value));
+    if ($value instanceof Config) {
+      return $this->wrapConfigValue($name, $value);
     }
-    elseif (is_iterable($value)) {
-      $this->writePropertyValue($property_name, $this->wrapIterableValue($property_name, $value));
+    if (is_scalar($value)) {
+      return $this->wrapScalarValue($name, $value);
     }
-    elseif ($value instanceof MarkupInterface) {
-      $this->writePropertyValue($property_name, $this->wrapScalarValue($property_name, (string) $value));
+    if (is_iterable($value)) {
+      return $this->wrapIterableValue($name, $value);
     }
-    elseif ($value instanceof Url) {
-      $this->writePropertyValue($property_name, $this->wrapUrlValue($property_name, $value));
+    if ($value instanceof MarkupInterface) {
+      return $this->wrapScalarValue($name, (string) $value);
     }
-    elseif (is_object($value) && method_exists($value, '__toString')) {
-      $this->writePropertyValue($property_name, $this->wrapAnyValue($property_name, $value));
+    if ($value instanceof Url) {
+      return $this->wrapUrlValue($name, $value);
     }
-    else {
-      throw new \InvalidArgumentException("Invalid value given. Value must be of a scalar type, an entity, stringable or a typed data object.");
+    if (is_object($value) && method_exists($value, '__toString')) {
+      return $this->wrapAnyValue($name, $value);
     }
+    throw new \InvalidArgumentException("Invalid value given. Value must be of a scalar type, an entity, a config object, an iterable, stringable or a typed data object.");
   }
 
   /**

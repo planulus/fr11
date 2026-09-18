@@ -73,7 +73,7 @@ class BuildUrlFromRoute extends ConfigurableActionBase {
       '#type' => 'textarea',
       '#title' => $this->t('Route parameters'),
       '#default_value' => $this->configuration['parameters'],
-      '#description' => $this->t('Enter a key-value list of parameters. Supports YAML format. Example:<em><br/>node: 1</em>. When using tokens and YAML altogether, make sure that tokens are wrapped as a string. Example: <em>node: "[node:nid]"</em>'),
+      '#description' => $this->t('Enter a key-value list of parameters. Supports YAML format. Example:<em><br />node: 1</em>. When using tokens and YAML altogether, make sure that tokens are wrapped as a string. Example: <em>node: "[node:nid]"</em>'),
       '#eca_token_replacement' => TRUE,
     ];
 
@@ -121,7 +121,7 @@ fragment: comments</pre> When using tokens and YAML altogether, make sure that t
   /**
    * {@inheritdoc}
    */
-  public function execute(): void {
+  public function execute(?object $object = NULL): void {
     // Replace tokens in route name.
     $route_name = $this->tokenService->replace($this->configuration['route_name']);
     $params = $options = [];

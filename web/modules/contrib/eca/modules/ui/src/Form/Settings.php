@@ -133,14 +133,14 @@ class Settings extends ConfigFormBase {
     $form['user'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Execute models with user'),
-      '#description' => $this->t('Specify here, which user ECA should always switch to when executing models. Leave empty to let ECA always execute models with the current user. <br/>Can be a numeric user ID (UID) or a valid UUID that identifies the user.<br/>When a user is specified here, you will have access to the original ID of the session user with the <em>[session_user:uid]</em> token.'),
+      '#description' => $this->t('Specify here, which user ECA should always switch to when executing models. Leave empty to let ECA always execute models with the current user. <br />Can be a numeric user ID (UID) or a valid UUID that identifies the user.<br />When a user is specified here, you will have access to the original ID of the session user with the <em>[session_user:uid]</em> token.'),
       '#default_value' => $config->get('user'),
       '#weight' => 0,
     ];
     $form['service_user'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Service account user'),
-      '#description' => $this->t('The service account is a Drupal user that ECA will switch to when the action "Switch to service user" will be executed in a model. <br/>Can be a numeric user ID (UID) or a valid UUID that identifies the user.'),
+      '#description' => $this->t('The service account is a Drupal user that ECA will switch to when the action "Switch to service user" will be executed in a model. <br />Can be a numeric user ID (UID) or a valid UUID that identifies the user.<br />Everything after that action runs with the permissions of this account, so grant it only what your models actually need. ECA does not check any permission before the switch, because elevating to the service account is the very purpose of that action. Each model using it is responsible for making sure that its triggering event and the conditions in front of the action cannot be reached by an account that should not be able to cause the switch.'),
       '#default_value' => $config->get('service_user'),
       '#weight' => 5,
     ];

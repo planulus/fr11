@@ -12,7 +12,8 @@ use Drupal\eca\Plugin\ECA\Condition\StringComparisonBase;
  */
 #[EcaCondition(
   id: 'eca_state',
-  label: new TranslatableMarkup('Persistent state: compare'),
+  label: new TranslatableMarkup('ECA state: compare'),
+  description: new TranslatableMarkup('Compares a value from ECA\'s own persistent key value store against a given value. This is not Drupal\'s state service; use <em>Key value store: read</em> with the collection "state" to reach that.'),
   version_introduced: '1.0.0',
 )]
 class EcaState extends StringComparisonBase {
@@ -50,14 +51,16 @@ class EcaState extends StringComparisonBase {
       '#title' => $this->t('Key'),
       '#default_value' => $this->configuration['key'],
       '#weight' => -90,
-      '#description' => $this->t('The key of the state.'),
+      '#description' => $this->t("The key of the value in ECA's key value store."),
+      '#eca_token_replacement' => TRUE,
     ];
     $form['value'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Value'),
       '#default_value' => $this->configuration['value'],
       '#weight' => -70,
-      '#description' => $this->t('The value of the state.'),
+      '#description' => $this->t('The value to compare the stored value with.'),
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

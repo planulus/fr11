@@ -51,7 +51,7 @@ eca.event.plugin.eca_render:extra_field:
   label: 'Extra Field'
   mapping:
     extra_field_name:
-      type: string
+      type: eca.machine_name
       label: 'Machine name of the extra field'
       constraints:
         NotBlank: []
@@ -108,12 +108,17 @@ eca.event.plugin.eca_render:local_tasks:
 eca_render.action_base:
   type: mapping
   label: 'Render action base config'
+  mapping: {}
+
+eca_render.render_element_action_base:
+  type: eca_render.action_base
+  label: 'Render element action base config'
   mapping:
     name:
-      type: machine_name
+      type: eca.token_replaced_machine_name
       label: 'Machine name'
     token_name:
-      type: label
+      type: eca.token_reference
       label: 'Token name'
     weight:
       type: weight
@@ -122,24 +127,30 @@ eca_render.action_base:
       type: string
       label: 'Mode'
       constraints:
-        Choice:
-          - 'set:clear'
-          - 'set:clear:defined'
-          - 'merge'
-          - 'prepend'
-          - 'append'
-          - 'nothing'
+        EcaChoice:
+          choices:
+            - 'set:clear'
+            - 'set:clear:defined'
+            - 'merge'
+            - 'prepend'
+            - 'append'
+            - 'nothing'
+        # The form element is required, so it never offers "undefined".
+        # @see \Drupal\eca_render\Plugin\Action\RenderElementActionBase::buildConfigurationForm
+        NotBlank: []
 
 action.configuration.eca_get_active_theme:
   type: mapping
   label: 'Configuration for the "Get Active Theme" action'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_reference
       label: 'Token name'
+      constraints:
+        NotBlank: []
 
 action.configuration.eca_render_details:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Configuration for the "Render Details" action'
   mapping:
     title:
@@ -158,7 +169,7 @@ action.configuration.eca_render_details:
       label: 'Summary value'
 
 action.configuration.eca_render_twig:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Configuration for the "Render Twig" action'
   mapping:
     template:
@@ -177,14 +188,14 @@ action.configuration.eca_render_twig:
       label: 'Validate YAML to prevent this from being executed when invalid'
 
 action.configuration.eca_render_views:views:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Configuration for the "Render Views" action'
   mapping:
     view_id:
       type: string
       label: 'View'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca_render\Plugin\Action\Views::getAllValidViews'
         NotBlank: []
     display_id:
@@ -199,7 +210,7 @@ action.configuration.eca_render_add_class:
   label: 'Configuration for the "Render Add Class" action'
   mapping:
     name:
-      type: string
+      type: eca.token_replaced_machine_name
       label: 'Machine name'
       constraints:
         NotBlank: []
@@ -214,10 +225,14 @@ action.configuration.eca_render_add_attached_library:
   label: 'Configuration for the "Render Add Attached Library" action'
   mapping:
     name:
-      type: string
+      # Deliberately without "NotBlank": the form element is not required, and
+      # leaving it blank is a documented way of targeting the parent element.
+      # The schema used to demand a value the user interface never asked for,
+      # which made hand-written configuration fail validation over something a
+      # site builder is free to do through the user interface.
+      # @see \Drupal\eca_render\Plugin\Action\AddAttachedBase::buildConfigurationForm
+      type: eca.token_replaced_machine_name
       label: 'Machine name'
-      constraints:
-        NotBlank: []
     value:
       type: string
       label: 'Library ID'
@@ -229,10 +244,12 @@ action.configuration.eca_render_add_attached_setting:
   label: 'Configuration for the "Render Add Attached Setting" action'
   mapping:
     name:
-      type: string
+      # Deliberately without "NotBlank", for the same reason as on the "Render
+      # Add Attached Library" action above: both inherit this optional element
+      # from the very same base class.
+      # @see \Drupal\eca_render\Plugin\Action\AddAttachedBase::buildConfigurationForm
+      type: eca.token_replaced_machine_name
       label: 'Machine name'
-      constraints:
-        NotBlank: []
     collection:
       type: string
       label: 'Collection name'
@@ -250,7 +267,7 @@ action.configuration.eca_render_add_attached_setting:
         NotBlank: []
 
 action.configuration.eca_render_build:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Configuration for the "Render Build" action'
   mapping:
     value:
@@ -263,6 +280,126 @@ action.configuration.eca_render_build:
       type: boolean
       label: 'Validate YAML to prevent this from being executed when invalid'
 
+action.configuration.eca_render_markup:
+  type: eca_render.render_element_action_base
+  label: 'Configuration for the "Render Markup" action'
+  mapping:
+    value:
+      type: text
+      label: 'Value'
+    use_yaml:
+      type: boolean
+      label: 'Interpret above value as YAML format'
+    validate_yaml:
+      type: boolean
+      label: 'Validate YAML to prevent this from being executed when invalid'
+
+action.configuration.eca_render_lazy:
+  type: eca_render.render_element_action_base
+  label: 'Configuration for the "Render Lazy Element" action'
+  mapping:
+    argument:
+      type: text
+      label: 'Element argument'
+
+action.configuration.eca_render_file_contents:
+  type: eca_render.render_element_action_base
+  label: 'Configuration for the "Render File Contents" action'
+  mapping:
+    uri:
+      type: string
+      label: 'URI'
+      constraints:
+        NotBlank: []
+    encoding:
+      type: string
+      label: 'Encoding'
+      constraints:
+        EcaChoice:
+          choices:
+            - 'img:base64'
+            - 'string:base64'
+            - 'string:raw'
+        NotBlank: []
+    token_mime_type:
+      type: eca.token_name
+      label: 'Token name for MIME type'
+
+action.configuration.eca_render_text:filter:
+  type: eca_render.render_element_action_base
+  label: 'Configuration for the "Render Text" action'
+  mapping:
+    text:
+      type: text
+      label: 'Text'
+      constraints:
+        NotBlank: []
+    format:
+      type: string
+      label: 'Filter format'
+      constraints:
+        EcaChoice:
+          callback: '\Drupal\eca_render\Plugin\Action\Text::getAllValidFilterFormats'
+        NotBlank: []
+
+eca_render.image_action_base:
+  type: eca_render.render_element_action_base
+  label: 'Image render action base config'
+  mapping:
+    uri:
+      type: string
+      label: 'URI'
+      constraints:
+        NotBlank: []
+    style_name:
+      type: eca.token_replaced_machine_name
+      label: 'Style name'
+    alt:
+      type: string
+      label: 'Alt text'
+      constraints:
+        NotBlank: []
+    title:
+      type: string
+      label: 'Title'
+    width:
+      type: string
+      label: 'Width'
+    height:
+      type: string
+      label: 'Height'
+
+action.configuration.eca_render_image:image:
+  type: eca_render.image_action_base
+  label: 'Configuration for the "Render Image" action'
+
+action.configuration.eca_render_responsive_image:responsive_image:
+  type: eca_render.image_action_base
+  label: 'Configuration for the "Render Responsive Image" action'
+  mapping:
+    style_name:
+      type: eca.token_replaced_machine_name
+      label: 'Responsive image style'
+      constraints:
+        # Unlike the plain image action, this one requires the style.
+        # @see \Drupal\eca_render\Plugin\Action\ResponsiveImage::buildConfigurationForm
+        NotBlank: []
+
+action.configuration.eca_render_set_weight:
+  type: mapping
+  label: 'Configuration for the "Render Set Weight" action'
+  mapping:
+    name:
+      type: eca.token_replaced_machine_name
+      label: 'Machine name'
+      constraints:
+        NotBlank: []
+    weight:
+      type: string
+      label: 'Element weight'
+      constraints:
+        NotBlank: []
+
 action.configuration.eca_render_cacheability:
   type: mapping
   label: 'Configuration for the "Render Cacheability" action'
@@ -271,27 +408,28 @@ action.configuration.eca_render_cacheability:
       type: string
       label: 'Type'
       constraints:
-        Choice:
-          - 'tags'
-          - 'contexts'
-          - 'max-age'
+        EcaChoice:
+          choices:
+            - 'tags'
+            - 'contexts'
+            - 'max-age'
         NotBlank: []
     cache_value:
       type: string
       label: 'Value'
 
 action.configuration.eca_render_custom_form:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Configuration for the "Render Custom Form" action'
   mapping:
     custom_form_id:
-      type: string
+      type: eca.machine_name
       label: 'Custom form ID'
       constraints:
         NotBlank: []
 
 action.configuration.eca_render_link:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Configuration for the "Render Link" action'
   mapping:
     title:
@@ -316,11 +454,11 @@ action.configuration.eca_render_link:
       label: 'Enforce absolute'
 
 action.configuration.eca_render_dropbutton:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Configuration for the "Render Dropbutton" action'
   mapping:
     dropbutton_type:
-      type: string
+      type: eca.machine_name
       label: 'Dropbutton type'
     links:
       type: text
@@ -333,11 +471,11 @@ action.configuration.eca_render_dropbutton:
       label: 'Validate YAML to prevent this from being executed when invalid'
 
 action.configuration.eca_render_entity_form:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Configuration for the "Render Entity Form" action'
   mapping:
     operation:
-      type: string
+      type: eca.token_replaced_machine_name
       label: 'Operation'
       constraints:
         NotBlank: []
@@ -346,11 +484,11 @@ action.configuration.eca_render_entity_form:
       label: 'Token name holding the entity'
 
 action.configuration.eca_render_entity_view:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Configuration for the "Render Entity View" action'
   mapping:
     view_mode:
-      type: string
+      type: eca.token_replaced_machine_name
       label: 'View mode'
       constraints:
         NotBlank: []
@@ -359,16 +497,16 @@ action.configuration.eca_render_entity_view:
       label: 'Token name holding the entity'
 
 action.configuration.eca_render_entity_view_field:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Configuration for the "Render Entity View Field" action'
   mapping:
     field_name:
-      type: string
+      type: eca.token_replaced_machine_name
       label: 'Field name'
       constraints:
         NotBlank: []
     view_mode:
-      type: string
+      type: eca.token_replaced_machine_name
       label: 'View mode'
     display_options:
       type: text
@@ -388,7 +526,7 @@ action.configuration.eca_set_active_theme:
         NotBlank: []
 
 action.configuration.eca_render_serialize:serialization:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Render: unserialize'
   mapping:
     value:
@@ -406,7 +544,7 @@ action.configuration.eca_render_serialize:serialization:
       label: 'Validate YAML to prevent this from being executed when invalid'
 
 action.configuration.eca_render_unserialize:serialization:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Render: unserialize'
   mapping:
     value:
@@ -485,7 +623,7 @@ action.configuration.eca_render_alter_link_set_title:
     title:
       type: label
       label: 'title'
-action.configuration.eca_render_alter_link_url:
+action.configuration.eca_render_alter_link_set_url:
   type: eca_render.action_base
   label: 'Render: alter link, set url'
   mapping:

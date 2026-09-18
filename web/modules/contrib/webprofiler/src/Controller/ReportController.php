@@ -55,7 +55,7 @@ class ReportController extends ControllerBase {
 
     $ip = $request->query->get('ip');
     $url = $request->query->get('url');
-    $limit = \intval($request->get('limit', 10));
+    $limit = \intval($request->query->get('limit', 10));
     $method = $request->query->get('method');
     $method = $method != '- any -' ? $method : NULL;
 

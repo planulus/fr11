@@ -11,6 +11,7 @@ use Drupal\modeler_api\Plugin\ModelerApiModelOwner\ModelOwnerInterface;
 use Drupal\modeler_api\Plugin\ModelerApiModeler\ModelerInterface;
 use Drupal\modeler_api\Plugin\ModelerPluginManager;
 use Drupal\modeler_api\Plugin\ModelOwnerPluginManager;
+use Drupal\modeler_api\Plugin\ThemePluginManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -41,6 +42,22 @@ final class Settings extends ConfigFormBase {
   public const bool DEFAULT_PROPERTY_PANEL = TRUE;
 
   /**
+   * The theme option that lets the Modeler API pick an applicable theme.
+   *
+   * This is also the behavior when nothing is stored at all, so that a theme
+   * built for an owner-modeler combination takes effect as soon as its module
+   * is installed.
+   *
+   * @see \Drupal\modeler_api\Plugin\ThemePluginManager::resolveTheme()
+   */
+  public const string THEME_OPTION_AUTO = 'auto';
+
+  /**
+   * The theme option that leaves the modeler's own look and feel untouched.
+   */
+  public const string THEME_OPTION_DEFAULT = 'default';
+
+  /**
    * The model owner plugin manager.
    *
    * @var \Drupal\modeler_api\Plugin\ModelOwnerPluginManager
@@ -55,12 +72,20 @@ final class Settings extends ConfigFormBase {
   protected ModelerPluginManager $modelerPluginManager;
 
   /**
+   * The theme plugin manager.
+   *
+   * @var \Drupal\modeler_api\Plugin\ThemePluginManager
+   */
+  protected ThemePluginManager $themePluginManager;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container): static {
     $instance = parent::create($container);
     $instance->ownerPluginManager = $container->get('plugin.manager.modeler_api.model_owner');
     $instance->modelerPluginManager = $container->get('plugin.manager.modeler_api.modeler');
+    $instance->themePluginManager = $container->get('plugin.manager.modeler_api.theme');
     return $instance;
   }
 
@@ -126,9 +151,6 @@ final class Settings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state): array {
-    $themeOptions = [
-      'default' => $this->t('Default'),
-    ];
     $storageOptions = [
       self::STORAGE_OPTION_NONE => $this->t('Do not store raw model data'),
       self::STORAGE_OPTION_SEPARATE => $this->t('Store raw data in separate config entity'),
@@ -155,11 +177,29 @@ final class Settings extends ConfigFormBase {
           '#title' => $this->t(':label', [':label' => $modeler->label()]),
           '#open' => TRUE,
         ];
+        $themeOptions = [
+          self::THEME_OPTION_AUTO => $this->t('Automatic'),
+          self::THEME_OPTION_DEFAULT => $this->t('Default'),
+        ];
+        foreach ($this->themePluginManager->getThemesFor($owner->getPluginId(), $modeler->getPluginId()) as $themeId => $theme) {
+          $themeOptions[$themeId] = $theme->getLabel();
+        }
+        // A previously selected theme may no longer be discoverable, either
+        // because its module got uninstalled or because its restrictions
+        // changed. Fall back to the default so that the select does not
+        // produce an illegal choice error. The default is deliberately not
+        // the automatic option here: a stale theme should stop applying, not
+        // be replaced by a different one.
+        $selectedTheme = (string) self::value($owner, $modeler, 'theme', self::THEME_OPTION_AUTO);
+        if (!isset($themeOptions[$selectedTheme])) {
+          $selectedTheme = self::THEME_OPTION_DEFAULT;
+        }
         $form['owner_modeler'][$owner->getPluginId()][$modeler->getPluginId()]['theme'] = [
           '#type' => 'select',
           '#title' => $this->t('Theme'),
-          '#default_value' => self::value($owner, $modeler, 'theme', 'default'),
+          '#default_value' => $selectedTheme,
           '#options' => $themeOptions,
+          '#description' => $this->t('<em>Automatic</em> applies the theme that best matches this owner and modeler, and nothing at all if no module provides one. <em>Default</em> keeps the look and feel of the modeler itself. Selecting a theme pins that theme explicitly.'),
         ];
         $form['owner_modeler'][$owner->getPluginId()][$modeler->getPluginId()]['storage'] = [
           '#type' => 'select',

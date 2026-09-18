@@ -32,9 +32,16 @@ class ApplyRecipe extends ConfigurableActionBase {
    * {@inheritdoc}
    */
   public function access($object, ?AccountInterface $account = NULL, $return_as_object = FALSE) {
-    $result = AccessResult::allowed();
-    if ($this->getRecipePath($this->configuration['recipe_package_name']) === NULL) {
-      $result = AccessResult::forbidden('The configured package name is invalid.');
+    // Applying a recipe installs modules and executes config actions, which
+    // is at least as privileged as any other config operation in ECA, so it
+    // requires the same permission.
+    $result = AccessResult::forbidden('The user does not have the permission to administer site configuration.');
+    $account = $account ?: $this->currentUser;
+    if ($account->hasPermission('administer site configuration')) {
+      $result = AccessResult::allowed();
+      if ($this->getRecipePath($this->configuration['recipe_package_name']) === NULL) {
+        $result = AccessResult::forbidden('The configured package name is invalid.');
+      }
     }
     return $return_as_object ? $result : $result->isAllowed();
   }

@@ -163,6 +163,7 @@ class FormAddGroupElement extends FormActionBase {
       '#weight' => -10,
       '#default_value' => $this->configuration['name'],
       '#required' => TRUE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['title'] = [
       '#type' => 'textfield',
@@ -171,6 +172,7 @@ class FormAddGroupElement extends FormActionBase {
       '#weight' => -9,
       '#default_value' => $this->configuration['title'],
       '#required' => TRUE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['open'] = [
       '#type' => 'checkbox',
@@ -193,6 +195,7 @@ class FormAddGroupElement extends FormActionBase {
       '#description' => $this->t('Machine names of form fields that should be grouped together. Define multiple values separated with commas. Example: <em>first_name,last_name</em>'),
       '#weight' => -6,
       '#default_value' => $this->configuration['fields'],
+      '#eca_token_replacement' => TRUE,
     ];
     $form['introduction_text'] = [
       '#type' => 'textarea',
@@ -200,6 +203,7 @@ class FormAddGroupElement extends FormActionBase {
       '#description' => $this->t('Here you can set an introduction text of the group.'),
       '#weight' => -5,
       '#default_value' => $this->configuration['introduction_text'],
+      '#eca_token_replacement' => TRUE,
     ];
     $form['summary_value'] = [
       '#type' => 'textarea',
@@ -207,6 +211,7 @@ class FormAddGroupElement extends FormActionBase {
       '#description' => $this->t('Here you can set the summary text of the group.'),
       '#weight' => -4,
       '#default_value' => $this->configuration['summary_value'],
+      '#eca_token_replacement' => TRUE,
     ];
     $form['group'] = [
       '#type' => 'textfield',

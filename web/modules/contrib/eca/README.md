@@ -13,13 +13,64 @@ workflows.
 
 ### Upgrading from ECA 2
 
-If you are upgrading from ECA 2.x, do **not** jump directly to ECA 3.1 or
-later. Several modules that existed in ECA 2 (such as `eca_modeller_bpmn`) were
-removed in 3.1, and skipping the intermediate release can cause update failures.
+ECA 3 moved everything about modeling out of ECA and into the
+[Modeler API](https://www.drupal.org/project/modeler_api). Your models are
+migrated for you, but ECA 2 shipped its own BPMN modeler as the sub-module
+`eca_modeller_bpmn`, and that sub-module no longer exists in ECA 3.1. Drupal
+cannot boot with a module recorded as installed whose code is gone, so it has to
+be uninstalled **while you are still on ECA 2** -- no update hook can do it for
+you, because none of them get to run.
 
-Choose one of these two upgrade paths:
+First check which Drupal core version you need. ECA cannot bridge the whole
+range in one step, so update core first if your site is below Drupal 11.3:
 
-**Option A -- Step through ECA 3.0 first (recommended)**
+| ECA release | Supported Drupal core |
+|-------------|-----------------------|
+| 2.1.x       | `^10.3 \|\| ^11`      |
+| 3.0.x       | `^11.2`               |
+| 3.1.x       | `^11.3 \|\| ^12.0`    |
+
+Then choose one of these two upgrade paths:
+
+**Option A -- Go to 3.1+ directly (recommended)**
+
+1. While still on ECA 2, uninstall the old modeler. In ECA 2 the `bpmn_io`
+   module depends on `eca_modeller_bpmn`, so it has to go first -- your models
+   are not affected, because they are stored as configuration owned by `eca`
+   itself:
+
+   ```bash
+   drush pm:uninstall bpmn_io eca_modeller_bpmn
+   ```
+
+2. Update the code, including Drupal core if the table above says so:
+
+   ```bash
+   composer require drupal/eca:^3 drupal/bpmn_io:^3 drupal/modeler_api:^1
+   ```
+
+3. Re-enable the modeler. This also installs the Modeler API, and it has to
+   happen before the next step: the migration reads the diagrams of your models
+   through the modeler that drew them, and can only hand them over if it is
+   available:
+
+   ```bash
+   drush en bpmn_io
+   ```
+
+4. Run the database updates. Your models are migrated to ECA 3 automatically,
+   which hands each one over to the Modeler API and renames the `form_id`
+   setting of form events to `form_ids`:
+
+   ```bash
+   drush cr && drush updatedb
+   ```
+
+If you skip step 3, the update reports which models it could not migrate and
+leaves their diagrams untouched. Enable `bpmn_io` and run `drush updatedb` again
+to finish the job.
+
+**Option B -- Step through ECA 3.0 first**
 
 1. Update to ECA 3.0: `composer require drupal/eca:~3.0.0 drupal/bpmn_io:^3
    drupal/modeler_api:^1`
@@ -31,24 +82,11 @@ See the
 [ECA 3.0.0 release notes](https://www.drupal.org/project/eca/releases/3.0.0)
 for full details on the 2-to-3.0 migration.
 
-**Option B -- Clean up on ECA 2, then go to 3.1+ directly**
-
-While still on ECA 2, uninstall the modules that were removed in 3.1:
-
-```bash
-drush pm:uninstall eca_modeller_bpmn
-```
-
-Also review the
+Whichever path you take, also review the
 [ECA 3.1.0 release notes](https://www.drupal.org/project/eca/releases/3.1.0)
 for the full list of extracted integrations (AI, IEF, Project Browser, Token,
 Webform, Field Widget Actions) and install their standalone replacements if you
-use them. Then update directly:
-
-```bash
-composer require drupal/eca:^3 drupal/bpmn_io:^3 drupal/modeler_api:^1
-drush cr && drush updatedb
-```
+use them.
 
 ### How it works
 

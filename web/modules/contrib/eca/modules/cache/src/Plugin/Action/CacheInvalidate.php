@@ -32,6 +32,7 @@ abstract class CacheInvalidate extends CacheActionBase {
       ]),
       '#default_value' => $this->configuration['tags'],
       '#weight' => -30,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

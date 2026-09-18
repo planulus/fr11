@@ -2,12 +2,14 @@
 
 namespace Drupal\Tests\webprofiler\Kernel;
 
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\webprofiler_config_entity\TestConfigStorageInterface;
 
 /**
  * Tests the ConfigEntityDecoratorGenerator.
  */
+#[RunTestsInSeparateProcesses]
 class ConfigEntityDecoratorGeneratorTest extends KernelTestBase {
 
   /**

@@ -1,0 +1,13 @@
+services:
+  webprofiler_service_closure_test.consumer:
+    class: Drupal\webprofiler_service_closure_test\ServiceClosureConsumer
+    arguments:
+      - !service_closure '@config.factory'
+      - !service_closure '@state'
+
+  webprofiler_service_closure_test.middleware:
+    class: Drupal\webprofiler_service_closure_test\ServiceClosureMiddleware
+    arguments:
+      - !service_closure '@config.factory'
+    tags:
+      - { name: http_middleware, priority: 250 }

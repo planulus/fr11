@@ -52,6 +52,7 @@ nav:
       - Context: plugin-managers/context/index.md
       - Plugin Dependency: plugin-managers/plugin-dependency/index.md
       - Template Token: plugin-managers/template-token/index.md
+      - Theme: plugin-managers/theme/index.md
   - API Reference:
       - api-reference/index.md
       - Api Service: api-reference/api-service.md

@@ -76,6 +76,7 @@ class FormOperation extends StringComparisonBase {
       '#description' => $this->t('The machine name of the operation. Example: <em>default, save, delete</em>'),
       '#default_value' => $this->configuration['operation'],
       '#weight' => -70,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

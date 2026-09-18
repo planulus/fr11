@@ -112,6 +112,7 @@ class SetFormDisplay extends ConfigurableActionBase {
       '#description' => $this->t('The machine name of the display mode. Please note: This action only works when reacting upon the event "Prepare content entity form".'),
       '#default_value' => $this->configuration['display_mode'],
       '#weight' => -10,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

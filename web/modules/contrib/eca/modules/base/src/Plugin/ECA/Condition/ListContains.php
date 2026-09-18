@@ -70,6 +70,7 @@ class ListContains extends ConditionBase {
       '#title' => $this->t('Value to lookup'),
       '#default_value' => $this->configuration['value'],
       '#weight' => -180,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

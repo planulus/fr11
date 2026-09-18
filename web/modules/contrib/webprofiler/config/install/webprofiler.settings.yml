@@ -3,6 +3,7 @@ exclude_toolbar: "/media/oembed"
 intercept_redirects: false
 purge_on_cache_clear: true
 active_toolbar_items:
+  ai: ai
   ajax: ajax
   blocks: blocks
   database: database

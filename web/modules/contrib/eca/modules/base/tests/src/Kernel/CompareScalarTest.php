@@ -399,4 +399,72 @@ class CompareScalarTest extends KernelTestBase {
     $this->assertTrue($condition->evaluate());
   }
 
+  /**
+   * Tests the "_eca_token" sentinel for the comparison operator.
+   *
+   * This is a different mechanism than the in-string token replacement that
+   * testTokenComparison() covers: the whole configuration value is the literal
+   * "_eca_token", which means "read the operator from the companion token".
+   * PluginFormTrait::buildTokenName() derives that token name from the plugin
+   * ID plus the field key, so "eca_scalar_operator" here.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   */
+  public function testOperatorFromToken(): void {
+    /** @var \Drupal\eca\Token\TokenInterface $token_services */
+    $token_services = \Drupal::service('eca.token_services');
+
+    // "contains" is true for this pair while the default "equal" is false, so
+    // the two halves below cannot be confused with one another.
+    /** @var \Drupal\eca_base\Plugin\ECA\Condition\ScalarComparison $condition */
+    $condition = $this->conditionManager->createInstance('eca_scalar', [
+      'left' => 'my test string',
+      'right' => 'test',
+      'operator' => '_eca_token',
+      'type' => StringComparisonBase::COMPARE_TYPE_VALUE,
+      'case' => TRUE,
+      'negate' => FALSE,
+    ]);
+
+    // Without the companion token the sentinel falls back to the documented
+    // default operator, which is "equal".
+    $this->assertFalse($token_services->hasTokenData('eca_scalar_operator'), 'The companion token must not exist yet.');
+    $this->assertFalse($condition->evaluate(), 'Without the companion token the operator must fall back to "equal", which is false here.');
+
+    // With the companion token the real operator is used instead.
+    $token_services->addTokenData('eca_scalar_operator', StringComparisonBase::COMPARE_CONTAINS);
+    $this->assertTrue($condition->evaluate(), 'With the companion token the operator must be "contains", which is true here.');
+  }
+
+  /**
+   * Tests the "_eca_token" sentinel for the comparison type.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   */
+  public function testTypeFromToken(): void {
+    /** @var \Drupal\eca\Token\TokenInterface $token_services */
+    $token_services = \Drupal::service('eca.token_services');
+
+    // "15" is less than "5" lexically but not by value, so the default type
+    // and the type carried by the token produce opposite results.
+    /** @var \Drupal\eca_base\Plugin\ECA\Condition\ScalarComparison $condition */
+    $condition = $this->conditionManager->createInstance('eca_scalar', [
+      'left' => '15',
+      'right' => '5',
+      'operator' => StringComparisonBase::COMPARE_LESSTHAN,
+      'type' => '_eca_token',
+      'case' => TRUE,
+      'negate' => FALSE,
+    ]);
+
+    // Without the companion token the sentinel falls back to the documented
+    // default type, which is "value".
+    $this->assertFalse($token_services->hasTokenData('eca_scalar_type'), 'The companion token must not exist yet.');
+    $this->assertFalse($condition->evaluate(), 'Without the companion token the type must fall back to "value", so 15 is not less than 5.');
+
+    // With the companion token the real type is used instead.
+    $token_services->addTokenData('eca_scalar_type', StringComparisonBase::COMPARE_TYPE_LEXICAL);
+    $this->assertTrue($condition->evaluate(), 'With the companion token the type must be "lexical", so 15 is less than 5.');
+  }
+
 }

@@ -17,6 +17,7 @@ services:
       - '@modeler_api.template_token_resolver'
       - '@current_user'
       - '%eca.max_recursion_level%'
+      - '%eca.max_event_occurrences%'
   logger.channel.eca:
     parent: logger.channel_base
     arguments:
@@ -170,11 +171,18 @@ services:
   Drupal\eca\Service\Actions: '@eca.service.action'
   Drupal\eca\Service\Conditions: '@eca.service.condition'
   Drupal\eca\Service\ContentEntityTypes: '@eca.service.content_entity_types'
+  Drupal\eca\Service\Events: '@eca.service.event'
   Drupal\eca\Token\TokenServices: '@eca.token_services'
   Drupal\eca\PluginManager\Event: '@plugin.manager.eca.event'
 
 parameters:
   eca.max_recursion_level: 1
+  # How often one event object may appear on the execution stack at the same
+  # time. Unlike eca.max_recursion_level, which looks for a repeating block and
+  # therefore does not bound the stack, this caps the stack by construction at
+  # this value multiplied by the number of distinct enabled event objects.
+  # Raise it only if a model legitimately nests one event more than ten deep.
+  eca.max_event_occurrences: 10
   # Override following parameter as blank to disable documentation links at all.
   eca.default_documentation_domain: "https://ecaguide.org"
   eca.skip_procedural_hook_scan: true

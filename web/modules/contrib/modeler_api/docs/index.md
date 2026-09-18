@@ -3,7 +3,8 @@
 The Modeler API module provides a framework for building visual modelers in
 Drupal. It decouples the concept of *what is being modeled* (Model Owners) from
 *how it is modeled* (Modelers), and supports rich contextual metadata through
-three YAML-based plugin systems (Contexts, Dependencies, Template Tokens).
+four YAML-based plugin systems (Contexts, Dependencies, Template Tokens,
+Themes).
 
 ## Who is this for?
 
@@ -12,8 +13,8 @@ This documentation targets **Drupal module developers** who want to:
 - Integrate their configuration entities with a visual modeler (implement a
   **Model Owner** plugin).
 - Build a new visual editing experience (implement a **Modeler** plugin).
-- Provide contextual component lists, dependency rules, or template tokens for
-  an existing model owner (define **YAML plugins**).
+- Provide contextual component lists, dependency rules, template tokens, or
+  canvas styling for an existing model owner (define **YAML plugins**).
 
 ## Key concepts
 
@@ -24,6 +25,7 @@ This documentation targets **Drupal module developers** who want to:
 | **Context** | A YAML-based plugin that defines which components are available for a specific use case within a model owner. |
 | **Dependency** | A YAML-based plugin that constrains which components can follow other components. |
 | **Template Token** | A YAML-based plugin that provides token trees for use in model templates. |
+| **Theme** | A YAML-based plugin that points at asset libraries whose CSS overrides the styling of the modeler canvas. One theme can be selected per owner/modeler combination, or resolved automatically from the themes built for it. |
 | **Component** | A value object representing a single element in a model (event, action, condition, gateway, etc.). |
 
 ## Architecture at a glance

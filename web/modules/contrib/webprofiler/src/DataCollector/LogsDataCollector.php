@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\webprofiler\DataCollector;
 
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
+use Drupal\Core\Logger\LogMessageParserInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\monolog\Logger\LoggerInterfacesAdapter;
 use Psr\Log\LoggerInterface;
@@ -18,14 +20,20 @@ use Symfony\Component\HttpKernel\Log\DebugLoggerInterface;
 class LogsDataCollector extends DataCollector implements HasPanelInterface, LateDataCollectorInterface {
 
   use StringTranslationTrait;
+  use DependencySerializationTrait;
 
   /**
    * LogsDataCollector constructor.
    *
    * @param \Psr\Log\LoggerInterface $logger
    *   The logger.
+   * @param \Drupal\Core\Logger\LogMessageParserInterface $parser
+   *   The log message parser.
    */
-  public function __construct(private readonly LoggerInterface $logger) {
+  public function __construct(
+    private readonly LoggerInterface $logger,
+    private readonly LogMessageParserInterface $parser,
+  ) {
     $this->data['logs'] = [];
   }
 
@@ -90,15 +98,19 @@ class LogsDataCollector extends DataCollector implements HasPanelInterface, Late
       '#data' => [
         '#type' => 'table',
         '#header' => [
+          $this->t('Timestamp'),
           $this->t('Priority'),
           $this->t('Channel'),
           $this->t('Message'),
+          $this->t('Context'),
         ],
         '#rows' => \array_map(function ($log) {
           return [
+            $log['timestamp_rfc3339'],
             $log['priorityName'],
             $log['channel'],
             $this->processContext($log['message'], $log['context']),
+            \json_encode($log['context']),
           ];
         }, $this->data['logs']),
         '#attributes' => [
@@ -123,15 +135,17 @@ class LogsDataCollector extends DataCollector implements HasPanelInterface, Late
    *   The processed context.
    */
   private function processContext(string $message, array $context): string {
-    $replacements = [];
-    foreach ($context as $key => $value) {
-      if (\is_array($value) || \is_object($value)) {
-        $value = \json_encode($value);
-      }
-      $replacements['{' . $key . '}'] = $value;
-    }
+    $message_placeholders = $this
+      ->parser
+      ->parseMessagePlaceholders(
+        $message,
+        $context,
+      );
 
-    return \strtr($message, $replacements);
+    // Replace the placeholders in the message.
+    return \count($message_placeholders) === 0
+      ? $message
+      : \strtr($message, $message_placeholders);
   }
 
 }

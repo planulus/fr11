@@ -20,6 +20,7 @@ class SaveNewEntityTest extends Base {
     'node',
     'taxonomy',
     'text',
+    'filter',
     'eca_base',
     'eca_content',
     'eca_test_model_save_new_entity',

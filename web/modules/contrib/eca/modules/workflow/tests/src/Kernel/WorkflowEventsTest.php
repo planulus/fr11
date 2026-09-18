@@ -33,6 +33,7 @@ class WorkflowEventsTest extends KernelTestBase {
     'user',
     'system',
     'text',
+    'filter',
     'workflows',
     'field',
     'eca',
@@ -53,7 +54,7 @@ class WorkflowEventsTest extends KernelTestBase {
     $this->installEntitySchema('node');
     $this->installEntitySchema('user');
     $this->installEntitySchema('content_moderation_state');
-    $this->installConfig(['system', 'content_moderation']);
+    $this->installConfig(['system', 'filter', 'content_moderation']);
 
     $this->createContentType(['type' => 'article', 'name' => 'Article']);
 

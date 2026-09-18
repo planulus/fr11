@@ -44,7 +44,7 @@ class SetAjaxResponseUpdateBuildIdCommand extends ResponseAjaxCommandBase {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state): array {
-    $form['old_id'] = [
+    $form['old'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Old ID'),
       '#description' => $this->t('The old build ID.'),
@@ -53,7 +53,7 @@ class SetAjaxResponseUpdateBuildIdCommand extends ResponseAjaxCommandBase {
       '#required' => TRUE,
       '#eca_token_replacement' => TRUE,
     ];
-    $form['new_id'] = [
+    $form['new'] = [
       '#type' => 'textfield',
       '#title' => $this->t('New ID'),
       '#description' => $this->t('The new build ID.'),
@@ -69,8 +69,8 @@ class SetAjaxResponseUpdateBuildIdCommand extends ResponseAjaxCommandBase {
    * {@inheritdoc}
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state): void {
-    $this->configuration['old'] = (string) $form_state->getValue('old_id');
-    $this->configuration['new'] = (string) $form_state->getValue('new_id');
+    $this->configuration['old'] = (string) $form_state->getValue('old');
+    $this->configuration['new'] = (string) $form_state->getValue('new');
     parent::submitConfigurationForm($form, $form_state);
   }
 

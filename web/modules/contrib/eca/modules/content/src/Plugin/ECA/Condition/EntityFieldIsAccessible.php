@@ -70,6 +70,7 @@ class EntityFieldIsAccessible extends ConditionBase {
       '#default_value' => $this->configuration['field_name'] ?? '',
       '#required' => TRUE,
       '#weight' => -20,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['operation'] = [
       '#type' => 'select',

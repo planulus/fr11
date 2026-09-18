@@ -36,8 +36,16 @@ abstract class RenderElementActionBase extends RenderActionBase {
   public function execute(?object $object = NULL): void {
     $build = [];
     $this->doBuild($build);
-    if ($this->configuration['weight'] !== '') {
-      $weight = trim((string) $this->tokenService->replaceClear($this->configuration['weight']));
+    if (empty($build)) {
+      return;
+    }
+    // No weight given is stored as NULL, not as an empty string: the element is
+    // not required and its default value is the empty string, which
+    // \Drupal\Core\Config\StorableConfigBase::castValue() turns into NULL for a
+    // numeric configuration key.
+    $configured_weight = $this->configuration['weight'] ?? NULL;
+    if ($configured_weight !== NULL && $configured_weight !== '') {
+      $weight = trim((string) $this->tokenService->replaceClear($configured_weight));
       if ($weight !== '' && is_numeric($weight)) {
         $build['#weight'] = $weight;
       }
@@ -200,6 +208,7 @@ abstract class RenderElementActionBase extends RenderActionBase {
       '#default_value' => $this->configuration['weight'],
       '#weight' => -25,
       '#required' => FALSE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['mode'] = [
       '#type' => 'select',

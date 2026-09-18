@@ -32,7 +32,7 @@ class EventsDataCollector extends DataCollector implements LateDataCollectorInte
   /**
    * {@inheritdoc}
    */
-  public function getName() {
+  public function getName(): string {
     return 'events';
   }
 
@@ -53,31 +53,73 @@ class EventsDataCollector extends DataCollector implements LateDataCollectorInte
    */
   public function lateCollect() {
     if ($this->eventDispatcher instanceof EventDispatcherTraceableInterface) {
-      $count_called = 0;
-      $called_listeners = $this->eventDispatcher->getCalledListeners();
-      foreach ($called_listeners as &$called_events) {
-        foreach ($called_events as &$priority) {
-          foreach ($priority as &$listener) {
-            $count_called++;
-            $listener['clazz'] = $this->getMethodData($listener['class'], $listener['method']);
-          }
-        }
-      }
-
-      $this->data['called_listeners'] = $called_listeners;
+      [$called, $count_called] = $this->normalizeListeners(
+        $this->eventDispatcher->getCalledListeners(),
+      );
+      $this->data['called_listeners'] = $called;
       $this->data['called_listeners_count'] = $count_called;
 
-      $count_not_called = 0;
-      $not_called_listeners = $this->eventDispatcher->getNotCalledListeners();
-      foreach ($not_called_listeners as $not_called_events) {
-        foreach ($not_called_events as $not_priority) {
-          $count_not_called += \count($not_priority);
-        }
-      }
-
-      $this->data['not_called_listeners'] = $not_called_listeners;
+      [$not_called, $count_not_called] = $this->normalizeListeners(
+        $this->eventDispatcher->getNotCalledListeners(),
+      );
+      $this->data['not_called_listeners'] = $not_called;
       $this->data['not_called_listeners_count'] = $count_not_called;
     }
+  }
+
+  /**
+   * Normalize a tracer listeners tree into serializable class/method data.
+   *
+   * The tracer module records listeners either as ['class' => …, 'method' => …]
+   * (already-called listeners) or as ['callable' => …] holding the raw callable
+   * (not-called listeners, and the listener that is executing while the profile
+   * is collected on kernel terminate). The raw callable is frequently a
+   * \Closure, which cannot be serialized, so storing it verbatim makes the
+   * profiler fail to write the profile ("Serialization of 'Closure' is not
+   * allowed"). Reduce every entry to class/method names so the collected data
+   * stays serializable.
+   *
+   * @param array $listeners
+   *   A tracer listeners tree keyed by event name and priority.
+   *
+   * @return array
+   *   A tuple of [normalized listeners tree, total listener count].
+   */
+  private function normalizeListeners(array $listeners): array {
+    $normalized = [];
+    $count = 0;
+
+    foreach ($listeners as $event_name => $events) {
+      foreach ($events as $priority => $entries) {
+        foreach ($entries as $entry) {
+          $count++;
+
+          if (isset($entry['callable'])) {
+            $info = $this->normalizeListener($entry['callable']);
+          }
+          else {
+            $info = [
+              'class' => $entry['class'] ?? 'Closure',
+              'method' => $entry['method'] ?? '',
+            ];
+          }
+
+          $clazz = $this->getMethodData($info['class'], $info['method']);
+          if ($clazz !== NULL) {
+            $info['clazz'] = $clazz;
+          }
+          else {
+            // Closures (and callables that cannot be reflected) are rendered
+            // as a plain "Closure" label; there is no source link to build.
+            $info['class'] = 'Closure';
+          }
+
+          $normalized[$event_name][$priority][] = $info;
+        }
+      }
+    }
+
+    return [$normalized, $count];
   }
 
   /**
@@ -241,6 +283,47 @@ class EventsDataCollector extends DataCollector implements LateDataCollectorInte
     return [
       '#markup' => \sprintf('%s::%s', $subscriber['service'][0], $subscriber['service'][1]),
     ];
+  }
+
+  /**
+   * Normalize a listener callable into serializable class/method data.
+   *
+   * The tracer module stores not-called listeners as the raw callable, which
+   * for most core listeners is a lazy-loading \Closure. Closures cannot be
+   * serialized, so storing them verbatim makes the profiler fail to write the
+   * profile ("Serialization of 'Closure' is not allowed"). Extract the class
+   * and method names instead so the collected data stays serializable.
+   *
+   * @param mixed $callable
+   *   The listener callable.
+   *
+   * @return array
+   *   An array with 'class' and 'method' keys.
+   */
+  private function normalizeListener(mixed $callable): array {
+    if ($callable instanceof \Closure) {
+      $reflection = new \ReflectionFunction($callable);
+
+      return [
+        'class' => $reflection->getClosureScopeClass()?->getName() ?? 'Closure',
+        'method' => $reflection->getName(),
+      ];
+    }
+
+    if (\is_array($callable) && isset($callable[0], $callable[1])) {
+      return [
+        'class' => \is_object($callable[0]) ? \get_class($callable[0]) : (string) $callable[0],
+        'method' => (string) $callable[1],
+      ];
+    }
+
+    if (\is_string($callable) && \str_contains($callable, '::')) {
+      [$class, $method] = \explode('::', $callable, 2);
+
+      return ['class' => $class, 'method' => $method];
+    }
+
+    return ['class' => 'Closure', 'method' => ''];
   }
 
 }

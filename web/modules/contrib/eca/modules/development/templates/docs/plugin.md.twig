@@ -1,12 +1,11 @@
----
-title: "{{ label|raw }}"
-tags:
-- {{ type }}
-- {{ provider }}
-- {% if extension_info.standalone %}{{ provider }}{% else %}{{ extension_info.module }}{% endif %} {{ type }}{% if version_introduced != 'unknown' %} {{ version_introduced }}{% endif %}
-
----
+{# The front matter is serialized by DocsCommands::frontMatter(). Never write
+   YAML by hand here: plugin labels, descriptions and option labels contain
+   quotes, ": " sequences and significant leading whitespace, none of which
+   survive hand-written interpolation. -#}
+{{ front_matter|raw }}
 # {{ label|raw }}
+
+Plugin ID: `{{ plugin_id }}`
 {% if version_introduced != 'unknown' %}
 
 Available since: {{ version_introduced }}
@@ -37,10 +36,29 @@ Available since: {{ version_introduced }}
 {{ extraDescription }}
 {% endfor %}
 {% for field in fields %}
+{% set term = (field.label_display and field.label != field.name) ? field.label_display ~ ' — config key: `' ~ field.name ~ '`' : '`' ~ field.name ~ '`' %}
+{% set meta = 'Type: `' ~ field.form_type ~ '` · Required: ' ~ (field.required ? 'yes' : 'no') ~ (field.default_display ? ' · Default: ' ~ field.default_display : '') %}
 
-`{{ field.label|raw }}`
+{{ term|raw }}
 
+{% if field.description %}
 :   {{ field.description|raw }}
+
+    {{ meta|raw }}
+{% else %}
+:   {{ meta|raw }}
+{% endif %}
+{% if field.options_display %}
+
+    Allowed values{% if field.options_truncated %} (first {{ field.options_display|length }} of a longer list){% endif %}: {{ field.options_display|join(', ')|raw }}
+{% elseif field.options_site_dependent %}
+
+    Allowed values depend on the configuration of the target site.
+{% endif %}
+{% if field.value_format %}
+
+    Value format: {{ field.value_format }}
+{% endif %}
 
     {!include/plugins/{{ provider }}/{{ type }}/{{ id_fs }}/{{ field.name }}.md!}
 {% endfor %}

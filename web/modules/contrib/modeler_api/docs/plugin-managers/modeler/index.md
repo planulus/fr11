@@ -114,8 +114,13 @@ The abstract base class provides:
 - **Final `create()`** -- prevents subclasses from adding DI parameters
 - **`getContainer()`** -- returns the service container for lazy getter
   injection
-- **`defaultModelConfigForm()`** -- builds the standard model metadata form
-  (label, version, status, template, tags, changelog, storage, documentation)
+- **`defaultModelConfigForm()`** -- builds the standard model metadata form.
+  `label`, `model_id`, `status`, `template`, `documentation` and `tags` sit at
+  the top level. The rarely used fields live in two collapsed `details`
+  groups: `recipe_export` holds `summary`, `recipes`, `export_config`,
+  `modules` and `config_actions`, while `advanced` holds `version`, `storage`
+  and `changelog`. Neither group sets `#tree`, so the submitted values stay
+  flat
 - **Default implementations** for most methods that return neutral values
 
 ### Dependency injection in Modeler plugins

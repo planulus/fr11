@@ -57,6 +57,7 @@ class RouteMatch extends StringComparisonBase {
       '#description' => $this->t('The routes and their parameters can be found in the <em>MODULE.routing.yml</em> file, e.g. the route name <em>entity.node.preview</em>.'),
       '#default_value' => $this->configuration['route'],
       '#weight' => -70,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

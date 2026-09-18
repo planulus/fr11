@@ -172,6 +172,45 @@ abstract class ActionBase extends CoreActionBase implements ContainerFactoryPlug
 
   /**
    * {@inheritdoc}
+   *
+   * ECA actions do not attach cache metadata to their access results. Return
+   * a bare AccessResult, without ::cachePerPermissions(), ::cachePerUser(),
+   * ::addCacheContexts(), ::addCacheTags() or any max-age call.
+   *
+   * The reason is that nothing ever reads it. Every known caller of an ECA
+   * action plugin's ::access() reduces the result to a boolean, plus the
+   * reason string in the two cases that report why: ECA's own executor in
+   * Objects\EcaAction::execute(), PreConfiguredAction::access(), and the bulk
+   * form callers in Views, Entity, Webform and DRD. None of them reads the
+   * cacheability back off the result, passes it to ::addCacheableDependency(),
+   * attaches it to a render array or returns it in a response. Nor could they
+   * rely on it: ActionInterface::access() is typed to return
+   * AccessResultInterface, which does not extend CacheableDependencyInterface,
+   * so reading cacheability requires an instanceof guard that no caller has.
+   * Actions also execute inside event dispatch - cron, entity CRUD, queue
+   * workers, Drush - where there is no render context to bubble into.
+   *
+   * Metadata that nobody consumes is not free: it is unverifiable, so it drifts
+   * into being wrong. ::cachePerPermissions() on a decision that actually
+   * depends on token replacement asserts the result varies by permission set
+   * and by nothing else, which is simply false, and the first consumer to
+   * appear would cache the wrong thing.
+   *
+   * Access *reasons* are a separate concern and are wanted. They come from
+   * AccessResultReasonInterface, which has nothing to do with cacheability,
+   * and callers do log them.
+   *
+   * The carve-out: this rule is about action plugin access only. Access checks
+   * that genuinely feed the render or page cache - controller `_custom_access`
+   * callbacks, hook_entity_access() implementations and the like - are a
+   * different case and are not covered by it. ECA's own eca_access hooks
+   * deliberately collect cacheability from a render context and then set a
+   * max-age of zero, which is correct for them.
+   *
+   * @see https://git.drupalcode.org/project/eca/-/work_items/3590399
+   * @see https://git.drupalcode.org/project/eca/-/work_items/3590440
+   * @see \Drupal\eca\Entity\Objects\EcaAction::execute()
+   * @see \Drupal\eca_access\Hook\AccessHooks::entityAccess()
    */
   public function access($object, ?AccountInterface $account = NULL, $return_as_object = FALSE) {
     $result = AccessResult::allowed();

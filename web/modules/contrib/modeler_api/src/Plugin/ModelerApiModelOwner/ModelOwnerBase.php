@@ -367,6 +367,78 @@ abstract class ModelOwnerBase extends PluginBase implements ModelOwnerInterface 
   /**
    * {@inheritdoc}
    */
+  final public function setSummary(ConfigEntityInterface $model, string $summary): ModelOwnerInterface {
+    return $this->setThirdPartySetting($model, 'summary', $summary);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  final public function getSummary(ConfigEntityInterface $model): string {
+    return $model->getThirdPartySetting('modeler_api', 'summary', '');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  final public function setRecipes(ConfigEntityInterface $model, array $recipes): ModelOwnerInterface {
+    return $this->setThirdPartySetting($model, 'recipes', array_values($recipes));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  final public function getRecipes(ConfigEntityInterface $model): array {
+    return $model->getThirdPartySetting('modeler_api', 'recipes', []);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  final public function setConfigActions(ConfigEntityInterface $model, array $configActions): ModelOwnerInterface {
+    // Normalized to a list, as the sibling setters are, so that a caller which
+    // removed an entry does not leave a gap in the keys behind.
+    return $this->setThirdPartySetting($model, 'config_actions', array_values($configActions));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  final public function getConfigActions(ConfigEntityInterface $model): array {
+    return $model->getThirdPartySetting('modeler_api', 'config_actions', []);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  final public function setExportConfig(ConfigEntityInterface $model, array $exportConfig): ModelOwnerInterface {
+    return $this->setThirdPartySetting($model, 'export_config', array_values($exportConfig));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  final public function getExportConfig(ConfigEntityInterface $model): array {
+    return $model->getThirdPartySetting('modeler_api', 'export_config', []);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  final public function setModules(ConfigEntityInterface $model, array $modules): ModelOwnerInterface {
+    return $this->setThirdPartySetting($model, 'modules', array_values($modules));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  final public function getModules(ConfigEntityInterface $model): array {
+    return $model->getThirdPartySetting('modeler_api', 'modules', []);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   final public function setTags(ConfigEntityInterface $model, array $tags): ModelOwnerInterface {
     return $this->setThirdPartySetting($model, 'tags', $tags);
   }

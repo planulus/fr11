@@ -14,6 +14,7 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\eca\Attribute\EcaAction;
 use Drupal\eca\Plugin\ECA\PluginFormTrait;
 use Drupal\views\Entity\View;
+use Drupal\views\ViewExecutable;
 use Drupal\views\Views as CoreViews;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -85,6 +86,7 @@ class Views extends RenderElementActionBase {
       '#default_value' => $this->configuration['display_id'],
       '#weight' => -40,
       '#required' => FALSE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['arguments'] = [
       '#type' => 'textarea',
@@ -92,6 +94,7 @@ class Views extends RenderElementActionBase {
       '#default_value' => $this->configuration['arguments'],
       '#weight' => -30,
       '#required' => FALSE,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }
@@ -139,21 +142,23 @@ class Views extends RenderElementActionBase {
    * {@inheritdoc}
    */
   protected function doBuild(array &$build): void {
+    $display_id = $this->getDisplayId();
     $view = CoreViews::getView($this->getViewId());
-    if ($view && $view->access($this->getDisplayId())) {
+    if ($view && $view->access($display_id)) {
       $args = [];
       foreach (explode('/', $this->getArguments()) as $argument) {
         if ($argument !== '') {
           $args[] = $argument;
         }
       }
+      $view->setDisplay($display_id);
+      $view->setArguments($args);
 
-      $build = [
-        '#type' => 'view',
-        '#name' => $this->getViewId(),
-        '#display_id' => $this->getDisplayId(),
-        '#arguments' => $args,
-      ];
+      if ($this->isViewOutputEmpty($view)) {
+        $build = [];
+        return;
+      }
+      $build = $view->buildRenderable($display_id, $args) ?? [];
     }
     else {
       $build = [];
@@ -165,6 +170,26 @@ class Views extends RenderElementActionBase {
     $metadata = BubbleableMetadata::createFromRenderArray($build);
     $build = ['#markup' => RenderMarkup::create($markup)];
     $metadata->applyTo($build);
+  }
+
+  /**
+   * Determine if the views display output is empty.
+   *
+   * @param \Drupal\views\ViewExecutable $view
+   *   The views executable instance.
+   *
+   * @return bool
+   *   Return TRUE if the views display output is empty; otherwise FALSE.
+   */
+  protected function isViewOutputEmpty(
+    ViewExecutable $view,
+  ): bool {
+    $view->preExecute();
+    $view->execute();
+
+    $display = $view->getDisplay();
+
+    return $display->outputIsEmpty();
   }
 
   /**

@@ -55,6 +55,15 @@ class EcaExecutionFormSubscriber extends EcaExecutionSubscriberBase {
     $event = $before_event->getEvent();
     if ($event instanceof FormEventInterface) {
       array_unshift($this->eventStack, $event);
+      // Arm the shift right after the push succeeded, and before anything else
+      // that could throw. AFTER_INITIAL_EXECUTION is dispatched even when this
+      // handler never ran - a listener throwing above this one's priority of
+      // -100 is enough - and shifting without having pushed would drop the
+      // entry belonging to the enclosing form scope.
+      // ::setPrestate() takes its value by reference, so it needs a variable.
+      // @see \Drupal\eca\Processor::execute()
+      $form_event_pushed = TRUE;
+      $before_event->setPrestate('form_event_pushed', $form_event_pushed);
       $form_state = $event->getFormState();
       $form_object = $form_state->getFormObject();
       if (($form_object instanceof EntityFormInterface) && !($event instanceof EntityEventInterface)) {
@@ -83,16 +92,19 @@ class EcaExecutionFormSubscriber extends EcaExecutionSubscriberBase {
   /**
    * Subscriber method after initial execution.
    *
-   * Removes the form data provider from the Token service.
+   * Shifts the entry that ::onBeforeInitialExecution() pushed, if it pushed
+   * one. The prestate flag replaces the previous FormEventInterface check: it
+   * is set only when this subscriber really did push, so it is the more
+   * precise condition of the two.
    *
    * @param \Drupal\eca\Event\AfterInitialExecutionEvent $after_event
    *   The according event.
    */
   public function onAfterInitialExecution(AfterInitialExecutionEvent $after_event): void {
-    $event = $after_event->getEvent();
-    if ($event instanceof FormEventInterface) {
-      array_shift($this->eventStack);
+    if (!$after_event->getPrestate('form_event_pushed')) {
+      return;
     }
+    array_shift($this->eventStack);
   }
 
   /**

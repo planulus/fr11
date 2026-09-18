@@ -192,6 +192,50 @@ for usage details.
 | `resolvePurpose($path)` | `?string` | Resolve the purpose (`select` or `config`) for a token path. Purpose is inherited from the first-level child under each indicator. |
 | `collectSelectors($path)` | `string[]` | Walk the token path and collect all CSS `selector` keys from the purpose node down to the target. |
 
+## Theme
+
+**Class:** `Drupal\modeler_api\Theme`
+
+Represents a styling definition from YAML discovery. A theme carries the asset
+libraries whose CSS overrides the look and feel a modeler ships by default, plus
+the owner and modeler restrictions that decide where it is offered. See
+[Theme Plugin Manager](../plugin-managers/theme/index.md) for usage details.
+
+### Constructor
+
+```php
+use Drupal\modeler_api\Theme;
+
+$theme = new Theme(
+  id: 'my_dark_theme',
+  label: 'Dark',
+  description: 'A dark canvas with light strokes.',
+  provider: 'my_module',
+  libraries: ['my_module/dark_theme'],
+  owners: ['eca'],
+  modelers: ['workflow_modeler'],
+  weight: -10,
+);
+```
+
+The `weight` parameter is optional and defaults to `0`.
+
+### Methods
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `getId()` | `string` | Theme ID |
+| `getLabel()` | `string` | Human-readable label |
+| `getDescription()` | `string` | Human-readable description, or an empty string |
+| `getProvider()` | `string` | Providing module |
+| `getLibraries()` | `string[]` | Asset library names to attach |
+| `getOwners()` | `string[]` | Model Owner plugin IDs, empty means all |
+| `getModelers()` | `string[]` | Modeler plugin IDs, empty means all |
+| `getWeight()` | `int` | Order among automatic selection candidates, lower first |
+| `appliesTo($ownerId, $modelerId)` | `bool` | Whether the theme can be used for a combination |
+
+The class is `readonly`, making it immutable after construction.
+
 ## DataModel entity
 
 **Class:** `Drupal\modeler_api\Entity\DataModel`

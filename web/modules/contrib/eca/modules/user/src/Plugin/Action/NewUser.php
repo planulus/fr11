@@ -56,6 +56,7 @@ class NewUser extends ConfigurableActionBase {
       '#description' => $this->t('The user name of the new user. If that name already exists, a hyphen followed by a number will be appended.'),
       '#required' => TRUE,
       '#weight' => -30,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['mail'] = [
       '#type' => 'email',
@@ -64,6 +65,7 @@ class NewUser extends ConfigurableActionBase {
       '#description' => $this->t('The email address of the new user. If that email already exists for another user, this action will fail.'),
       '#required' => TRUE,
       '#weight' => -40,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['status'] = [
       '#type' => 'checkbox',

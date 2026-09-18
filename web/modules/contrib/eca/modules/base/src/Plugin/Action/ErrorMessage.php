@@ -4,6 +4,7 @@ namespace Drupal\eca_base\Plugin\Action;
 
 use Drupal\Core\Action\Attribute\Action;
 use Drupal\Core\Action\Plugin\Action\MessageAction;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\eca\Attribute\EcaAction;
 
@@ -37,6 +38,15 @@ class ErrorMessage extends MessageAction {
 
     // @todo Fix in https://www.drupal.org/node/2577827
     $this->messenger->addError($this->renderer->renderInIsolation($build));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state): array {
+    $form = parent::buildConfigurationForm($form, $form_state);
+    $form['message']['#eca_token_replacement'] = TRUE;
+    return $form;
   }
 
 }

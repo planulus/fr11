@@ -57,6 +57,13 @@ class ConfigAction extends ConfigurableActionBase {
 
   /**
    * {@inheritdoc}
+   *
+   * No cache metadata is attached, in line with every other ECA action. It
+   * would have been actively misleading here: the two forbidden results below
+   * are decided by token replacement, not by the permission set, so tagging
+   * them as varying per permissions asserted something untrue.
+   *
+   * @see \Drupal\eca\Plugin\Action\ActionBase::access()
    */
   public function access($object, ?AccountInterface $account = NULL, $return_as_object = FALSE): AccessResultInterface|bool {
     $result = AccessResult::forbidden();
@@ -77,7 +84,7 @@ class ConfigAction extends ConfigurableActionBase {
         }
       }
     }
-    return $return_as_object ? $result->cachePerPermissions() : FALSE;
+    return $return_as_object ? $result : $result->isAllowed();
   }
 
   /**

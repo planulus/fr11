@@ -114,7 +114,7 @@ eca.event.plugin.content_entity:reference_selection:
       type: string
       label: 'Restrict by field (machine name)'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Token name holding the selection'
 
 eca.event.plugin.content_entity:options_selection:
@@ -125,7 +125,7 @@ eca.event.plugin.content_entity:options_selection:
       type: string
       label: 'Restrict by field (machine name)'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Token name holding the selection'
 
 eca.condition.plugin.eca_entity_field_is_accessible:
@@ -141,10 +141,11 @@ eca.condition.plugin.eca_entity_field_is_accessible:
       type: string
       label: 'Operation'
       constraints:
-        Choice:
-          - 'view'
-          - 'update'
-          - 'delete'
+        EcaChoice:
+          choices:
+            - 'view'
+            - 'update'
+            - 'delete'
         NotBlank: []
     entity:
       type: string
@@ -158,15 +159,16 @@ eca.condition.plugin.eca_entity_exists:
       type: string
       label: 'Load entity from'
       constraints:
-        Choice:
-          - current
-          - id
-          - properties
+        EcaChoice:
+          choices:
+            - current
+            - id
+            - properties
     entity_type:
       type: string
       label: 'Entity type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidContentEntityTypesAndNone'
     entity_id:
       type: string
@@ -181,7 +183,7 @@ eca.condition.plugin.eca_entity_exists:
       type: string
       label: 'Language'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidLangcodes'
     latest_revision:
       type: boolean
@@ -198,7 +200,7 @@ eca.condition.plugin.eca_entity_diff:
   label: 'Entity Diff'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
     compare_token_name:
       type: string
@@ -237,7 +239,7 @@ eca.condition.plugin.eca_entity_type_bundle:
       type: string
       label: 'Entity type (and bundle)'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidContentEntityTypesAndBundles'
     entity:
       type: string
@@ -254,13 +256,13 @@ eca.condition.plugin.eca_content_form_display_mode:
       type: string
       label: 'Comparison operator'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidOperators'
     type:
       type: string
       label: 'Comparison type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidTypes'
     case:
       type: boolean
@@ -280,13 +282,13 @@ eca.condition.plugin.eca_entity_field_value:
       type: string
       label: 'Comparison operator'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidOperators'
     type:
       type: string
       label: 'Comparison type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidTypes'
     case:
       type: boolean
@@ -309,13 +311,13 @@ eca.condition.plugin.eca_entity_original_field_value:
       type: string
       label: 'Comparison operator'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidOperators'
     type:
       type: string
       label: 'Comparison type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidTypes'
     case:
       type: boolean
@@ -343,11 +345,12 @@ eca.condition.plugin.eca_entity_is_accessible:
       type: string
       label: 'Operation'
       constraints:
-        Choice:
-          - 'view'
-          - 'update'
-          - 'delete'
-          - 'create'
+        EcaChoice:
+          choices:
+            - 'view'
+            - 'update'
+            - 'delete'
+            - 'create'
         NotBlank: []
     entity:
       type: string
@@ -385,7 +388,7 @@ action.configuration.eca_clone_entity:
   label: 'Configuration for the "Clone Entity" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     label:
       type: string
@@ -408,7 +411,7 @@ action.configuration.eca_diff_entity:
       type: boolean
       label: 'Return values'
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
     compare_token_name:
       type: string
@@ -436,19 +439,19 @@ action.configuration.eca_new_entity:
   label: 'Configuration for the "New Entity" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     type:
       type: string
       label: 'Entity Type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidContentEntityTypesAndBundles'
     langcode:
       type: string
       label: 'Language'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidLangcodes'
     label:
       type: string
@@ -471,7 +474,7 @@ action.configuration.eca_get_default_field_value:
       type: string
       label: 'Field name'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     object:
       type: string
@@ -485,7 +488,7 @@ action.configuration.eca_get_field_value:
       type: string
       label: 'Field name'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     object:
       type: string
@@ -496,13 +499,13 @@ action.configuration.eca_get_bundle_list:
   label: 'Configuration for the "Get Bundle List" action'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
     type:
       type: string
       label: 'Type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidContentEntityTypes'
     mode:
       type: string
@@ -517,7 +520,7 @@ action.configuration.eca_get_entity_type_list:
   label: 'Configuration for the "Get Entity Type List" action'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
     mode:
       type: string
@@ -532,21 +535,22 @@ action.configuration.eca_token_load_entity:
   label: 'Configuration for the "Token Load Entity" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     from:
       type: string
       label: 'Load entity from'
       constraints:
-        Choice:
-          - current
-          - id
-          - properties
+        EcaChoice:
+          choices:
+            - current
+            - id
+            - properties
     entity_type:
       type: string
       label: 'Entity type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidContentEntityTypesAndNone'
     entity_id:
       type: string
@@ -561,7 +565,7 @@ action.configuration.eca_token_load_entity:
       type: string
       label: 'Language'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidLangcodes'
     latest_revision:
       type: boolean
@@ -581,21 +585,22 @@ action.configuration.eca_token_load_entity_ref:
       type: string
       label: 'Field name entity reference'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     from:
       type: string
       label: 'Load entity from'
       constraints:
-        Choice:
-          - current
-          - id
-          - properties
+        EcaChoice:
+          choices:
+            - current
+            - id
+            - properties
     entity_type:
       type: string
       label: 'Entity type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidContentEntityTypesAndNone'
     entity_id:
       type: string
@@ -610,7 +615,7 @@ action.configuration.eca_token_load_entity_ref:
       type: string
       label: 'Language'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidLangcodes'
     latest_revision:
       type: boolean
@@ -636,18 +641,19 @@ action.configuration.eca_set_field_value:
       type: string
       label: 'Method'
       constraints:
-        Choice:
-          # @see \Drupal\eca_content\Plugin\Action\FieldUpdateActionBase::buildConfigurationForm
-          - 'set:clear'
-          - 'set:force_clear'
-          - 'set:empty'
-          - 'append:not_full'
-          - 'append:drop_first'
-          - 'append:drop_last'
-          - 'prepend:not_full'
-          - 'prepend:drop_first'
-          - 'prepend:drop_last'
-          - 'remove'
+        EcaChoice:
+          choices:
+            # @see \Drupal\eca_content\Plugin\Action\FieldUpdateActionBase::buildConfigurationForm
+            - 'set:clear'
+            - 'set:force_clear'
+            - 'set:empty'
+            - 'append:not_full'
+            - 'append:drop_first'
+            - 'append:drop_last'
+            - 'prepend:not_full'
+            - 'prepend:drop_first'
+            - 'prepend:drop_last'
+            - 'remove'
     strip_tags:
       type: boolean
       label: 'Strip tags'
@@ -702,18 +708,19 @@ action.configuration.eca_list_add_entity:
       type: string
       label: 'Method'
       constraints:
-        Choice:
-          # @see \Drupal\eca_content\Plugin\Action\FieldUpdateActionBase::buildConfigurationForm
-          - 'set:clear'
-          - 'set:force_clear'
-          - 'set:empty'
-          - 'append:not_full'
-          - 'append:drop_first'
-          - 'append:drop_last'
-          - 'prepend:not_full'
-          - 'prepend:drop_first'
-          - 'prepend:drop_last'
-          - 'remove'
+        EcaChoice:
+          choices:
+            # @see \Drupal\eca_content\Plugin\Action\FieldUpdateActionBase::buildConfigurationForm
+            - 'set:clear'
+            - 'set:force_clear'
+            - 'set:empty'
+            - 'append:not_full'
+            - 'append:drop_first'
+            - 'append:drop_last'
+            - 'prepend:not_full'
+            - 'prepend:drop_first'
+            - 'prepend:drop_last'
+            - 'remove'
         NotBlank: []
     index:
       type: string
@@ -730,24 +737,25 @@ action.configuration.eca_list_remove_entity:
   label: 'Configuration for the "List Remove Entity" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     method:
       type: string
       label: 'Method'
       constraints:
-        Choice:
-          # @see \Drupal\eca_content\Plugin\Action\FieldUpdateActionBase::buildConfigurationForm
-          - 'set:clear'
-          - 'set:force_clear'
-          - 'set:empty'
-          - 'append:not_full'
-          - 'append:drop_first'
-          - 'append:drop_last'
-          - 'prepend:not_full'
-          - 'prepend:drop_first'
-          - 'prepend:drop_last'
-          - 'remove'
+        EcaChoice:
+          choices:
+            # @see \Drupal\eca_content\Plugin\Action\FieldUpdateActionBase::buildConfigurationForm
+            - 'set:clear'
+            - 'set:force_clear'
+            - 'set:empty'
+            - 'append:not_full'
+            - 'append:drop_first'
+            - 'append:drop_last'
+            - 'prepend:not_full'
+            - 'prepend:drop_first'
+            - 'prepend:drop_last'
+            - 'remove'
         NotBlank: []
     index:
       type: string
@@ -767,7 +775,7 @@ action.configuration.eca_trigger_content_entity_custom_event:
       type: string
       label: 'Event ID'
     tokens:
-      type: text
+      type: eca.token_list
       label: 'Tokens to forward'
     object:
       type: string

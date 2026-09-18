@@ -6,6 +6,7 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\TypedData\Attribute\DataType;
 use Drupal\Core\TypedData\Plugin\DataType\StringData;
 use Drupal\Core\Url;
+use Symfony\Component\Routing\Exception\ExceptionInterface as RoutingException;
 
 /**
  * A wrapper for URL objects, provided by ECA.
@@ -37,7 +38,16 @@ class EcaUrl extends StringData {
    * {@inheritdoc}
    */
   public function getString(): string {
-    return isset($this->value) ? $this->value->toString() : '';
+    if (!isset($this->value)) {
+      return '';
+    }
+
+    try {
+      return $this->value->toString();
+    }
+    catch (RoutingException | \InvalidArgumentException) {
+      return '[object ' . get_debug_type($this->value) . ']';
+    }
   }
 
 }

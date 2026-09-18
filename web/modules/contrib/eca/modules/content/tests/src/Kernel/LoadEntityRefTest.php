@@ -310,4 +310,109 @@ class LoadEntityRefTest extends KernelTestBase {
     $account_switcher->switchBack();
   }
 
+  /**
+   * Tests that the "Defined by token" option resolves the plugin token names.
+   *
+   * The token names are the ones the configuration form declares for the
+   * plugin's own ID.
+   */
+  public function testDefinedByTokenResolvesPluginTokenNames(): void {
+    // Create the Article content type with revisioning and translation enabled.
+    $this->createContentType([
+      'type' => 'article',
+      'name' => 'Article',
+      'new_revision' => TRUE,
+    ]);
+    ContentLanguageSettings::create([
+      'id' => 'node.article',
+      'target_entity_type_id' => 'node',
+      'target_bundle' => 'article',
+      'default_langcode' => LanguageInterface::LANGCODE_DEFAULT,
+      'language_alterable' => TRUE,
+    ])->save();
+    // Create a translatable reference field so the translations of the
+    // carrier entity can point to different referenced entities.
+    $field_definition = FieldStorageConfig::create([
+      'field_name' => 'field_node_ref',
+      'type' => 'entity_reference',
+      'entity_type' => 'node',
+      'settings' => [
+        'target_type' => 'node',
+      ],
+      'cardinality' => FieldStorageConfig::CARDINALITY_UNLIMITED,
+    ]);
+    $field_definition->save();
+    FieldConfig::create([
+      'field_storage' => $field_definition,
+      'label' => 'A node reference.',
+      'entity_type' => 'node',
+      'bundle' => 'article',
+      'translatable' => TRUE,
+    ])->save();
+
+    /** @var \Drupal\Core\Action\ActionManager $action_manager */
+    $action_manager = \Drupal::service('plugin.manager.action');
+    /** @var \Drupal\eca\Token\TokenInterface $token_services */
+    $token_services = \Drupal::service('eca.token_services');
+
+    $referenced_en = Node::create([
+      'type' => 'article',
+      'title' => 'Referenced by the English translation.',
+      'langcode' => 'en',
+      'uid' => 1,
+      'status' => 0,
+    ]);
+    $referenced_en->save();
+    $referenced_de = Node::create([
+      'type' => 'article',
+      'title' => 'Referenced by the German translation.',
+      'langcode' => 'de',
+      'uid' => 1,
+      'status' => 0,
+    ]);
+    $referenced_de->save();
+
+    $carrier = Node::create([
+      'type' => 'article',
+      'title' => '123',
+      'langcode' => 'en',
+      'uid' => 1,
+      'status' => 0,
+    ]);
+    $carrier->field_node_ref->target_id = $referenced_en->id();
+    $carrier->save();
+    $carrier->addTranslation('de', [
+      'type' => 'article',
+      'title' => 'ECA ist super!',
+      'langcode' => 'de',
+      'uid' => 1,
+      'status' => 0,
+    ])->save();
+    $carrier->getTranslation('de')->field_node_ref->target_id = $referenced_de->id();
+    $carrier->save();
+
+    // Define the tokens exactly under the names the configuration form of the
+    // "eca_token_load_entity_ref" action declares, derived from the plugin's
+    // own ID, plus the token for the entity ID.
+    $token_services->addTokenData('eca_token_load_entity_ref_from', 'id');
+    $token_services->addTokenData('eca_token_load_entity_ref_entity_type', 'node');
+    $token_services->addTokenData('eca_token_load_entity_ref_langcode', 'de');
+    $token_services->addTokenData('carrier', $carrier);
+
+    // The action resolves all three keys through the "Defined by token" option.
+    /** @var \Drupal\eca_content\Plugin\Action\LoadEntity $action */
+    $action = $action_manager->createInstance('eca_token_load_entity_ref', [
+      'token_name' => 'loaded',
+      'from' => '_eca_token',
+      'entity_type' => '_eca_token',
+      'entity_id' => '[carrier:nid]',
+      'langcode' => '_eca_token',
+      'field_name_entity_ref' => 'field_node_ref',
+    ]);
+    $this->assertFalse($token_services->hasTokenData('loaded'), 'Token must not yet be defined.');
+    $action->execute(NULL);
+    $this->assertTrue($token_services->hasTokenData('loaded'), 'Token must be defined.');
+    $this->assertSame($referenced_de->id(), $token_services->getTokenData('loaded')->id(), 'The entity referenced by the German translation of the carrier must be loaded.');
+  }
+
 }

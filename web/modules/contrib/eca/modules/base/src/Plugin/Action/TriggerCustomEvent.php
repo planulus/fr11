@@ -77,6 +77,7 @@ class TriggerCustomEvent extends ConfigurableActionBase {
       '#default_value' => $this->configuration['event_id'],
       '#weight' => -20,
       '#description' => $this->t('The ID of the event to be triggered.'),
+      '#eca_token_replacement' => TRUE,
     ];
     $form['tokens'] = [
       '#type' => 'textarea',

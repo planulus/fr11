@@ -2,8 +2,11 @@
 
 namespace Drupal\Tests\eca_migrate\Kernel;
 
+use Drupal\Core\Form\FormState;
+use Drupal\eca\Entity\Objects\EcaEvent as EcaEventObject;
 use Drupal\eca\PluginManager\Event;
 use Drupal\eca_migrate\Event\EcaMigrateProcessEvent;
+use Drupal\eca_migrate\Plugin\ECA\Event\MigrateEvent;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\migrate\Row;
 use Drupal\user\Entity\User;
@@ -70,15 +73,12 @@ class EcaMigrateEventTest extends KernelTestBase {
     $value = 'foo_value';
     $row_source = [
       'source_field' => 'expected_value',
-      'constants' => [
-        'mid' => 'test_migration',
-      ],
     ];
     $row = new Row($row_source, [], TRUE);
     $row_destination = ['source_field' => 'expected_destination_value'];
     $row->setDestinationProperty(key($row_destination), reset($row_destination));
     $destination_property = 'foo_title';
-    $ecaMigrateProcessEvent = new EcaMigrateProcessEvent($value, $row, $destination_property);
+    $ecaMigrateProcessEvent = new EcaMigrateProcessEvent($value, $row, $destination_property, 'test_migration');
 
     $migrateEvent->setEvent($ecaMigrateProcessEvent);
 
@@ -86,11 +86,88 @@ class EcaMigrateEventTest extends KernelTestBase {
     $row = $migrateEvent->getData('row')->getValue();
     $source = $row['values']['source']['values'];
     $this->assertSame('expected_value', $source['source_field']);
-    $this->assertSame('test_migration', $source['constants']['values']['mid']);
     $this->assertEquals(1, $row['values']['is_stub']);
     $destination = $row['values']['destination']['values'];
     $this->assertSame($row_destination, $destination);
     $this->assertEquals('foo_title', $migrateEvent->getData('destination_property'));
+    $this->assertEquals('test_migration', $migrateEvent->getData('migration_id'));
+  }
+
+  /**
+   * Tests wildcard-based restriction by migration ID and destination property.
+   */
+  public function testAppliesForWildcard(): void {
+    $row = new Row(['source_field' => 'value'], [], TRUE);
+    $event = new EcaMigrateProcessEvent('value', $row, 'foo_title', 'test_migration');
+    $eventName = EcaMigrateProcessEvent::class;
+
+    // No restriction.
+    $this->assertTrue(MigrateEvent::appliesForWildcard($event, $eventName, '*::*'));
+    // Matching migration ID.
+    $this->assertTrue(MigrateEvent::appliesForWildcard($event, $eventName, 'test_migration::*'));
+    // Matching destination property.
+    $this->assertTrue(MigrateEvent::appliesForWildcard($event, $eventName, '*::foo_title'));
+    // Matching both.
+    $this->assertTrue(MigrateEvent::appliesForWildcard($event, $eventName, 'test_migration::foo_title'));
+    // Non-matching migration ID.
+    $this->assertFalse(MigrateEvent::appliesForWildcard($event, $eventName, 'other_migration::*'));
+    // Non-matching destination property.
+    $this->assertFalse(MigrateEvent::appliesForWildcard($event, $eventName, '*::other_property'));
+    // Matching migration ID but non-matching destination property.
+    $this->assertFalse(MigrateEvent::appliesForWildcard($event, $eventName, 'test_migration::other_property'));
+  }
+
+  /**
+   * Tests wildcard generation from event plugin configuration.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   */
+  public function testGenerateWildcard(): void {
+    /** @var \Drupal\eca_migrate\Plugin\ECA\Event\MigrateEvent $migrateEvent */
+    $migrateEvent = $this->eventManager->createInstance('migrate:process');
+
+    $ecaEvent = $this->createStub(EcaEventObject::class);
+    $ecaEvent->method('getConfiguration')->willReturn([
+      'migration_id' => 'test_migration',
+      'destination_property' => 'foo_title',
+    ]);
+    $wildcard = $migrateEvent->generateWildcard('eca_id', $ecaEvent);
+    $this->assertEquals('test_migration::foo_title', $wildcard);
+
+    $ecaEventEmpty = $this->createStub(EcaEventObject::class);
+    $ecaEventEmpty->method('getConfiguration')->willReturn([
+      'migration_id' => '',
+      'destination_property' => '',
+    ]);
+    $wildcard = $migrateEvent->generateWildcard('eca_id', $ecaEventEmpty);
+    $this->assertEquals('*::*', $wildcard);
+  }
+
+  /**
+   * Tests that the migration_id form field is a dynamically populated select.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   */
+  public function testMigrationIdSelectOptions(): void {
+    // Enable the test module that provides a discoverable migration.
+    $this->enableModules(['eca_migrate_test']);
+
+    /** @var \Drupal\eca_migrate\Plugin\ECA\Event\MigrateEvent $migrateEvent */
+    $migrateEvent = $this->eventManager->createInstance('migrate:process');
+    $form = $migrateEvent->buildConfigurationForm([], new FormState());
+
+    $this->assertSame('select', $form['migration_id']['#type']);
+    // The empty "any migration" option is always present.
+    $this->assertArrayHasKey('', $form['migration_id']['#options']);
+    // The test migration is listed with its label and ID.
+    $this->assertArrayHasKey('eca_migrate_test_migration', $form['migration_id']['#options']);
+    $this->assertSame(
+      'ECA migrate test migration (eca_migrate_test_migration)',
+      $form['migration_id']['#options']['eca_migrate_test_migration'],
+    );
+
+    // The destination property remains a free-text field.
+    $this->assertSame('textfield', $form['destination_property']['#type']);
   }
 
   /**
@@ -101,10 +178,23 @@ class EcaMigrateEventTest extends KernelTestBase {
     $expected = 'changed_value';
     $this->assertEquals($expected, $this->cleanupAfterSuccessors($expected));
 
-    // Array.
+    // Single value array.
+    $expected = ['changed_value_foo'];
+    $return_value = $this->cleanupAfterSuccessors($expected);
+    $this->assertSame($expected, $return_value);
+
+    $expected = ['foo' => 'changed_value_foo'];
+    $return_value = $this->cleanupAfterSuccessors($expected);
+    $this->assertSame($expected, $return_value);
+
+    // Multiple values array.
+    $expected = ['changed_value_foo', 'changed_value_bar'];
+    $return_value = $this->cleanupAfterSuccessors($expected);
+    $this->assertSame($expected, $return_value);
+
     $expected = ['foo' => 'changed_value_foo', 'bar' => 'changed_value_bar'];
     $return_value = $this->cleanupAfterSuccessors($expected);
-    $this->assertSame($expected, $return_value['values']);
+    $this->assertSame($expected, $return_value);
 
     // Entity.
     $expected = User::create([

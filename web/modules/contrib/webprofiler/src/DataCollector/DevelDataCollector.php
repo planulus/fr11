@@ -64,7 +64,7 @@ class DevelDataCollector extends DataCollector {
   /**
    * {@inheritdoc}
    */
-  public function getName() {
+  public function getName(): string {
     return 'devel';
   }
 

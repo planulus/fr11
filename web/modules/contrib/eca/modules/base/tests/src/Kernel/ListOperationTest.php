@@ -127,6 +127,57 @@ class ListOperationTest extends KernelTestBase {
   }
 
   /**
+   * Tests the "_eca_token" sentinel for the "eca_list_add" method.
+   *
+   * A configured value of the literal "_eca_token" means "read the real value
+   * from the companion token". PluginFormTrait::buildTokenName() derives that
+   * token name from the plugin ID plus the field key, so "eca_list_add_method"
+   * here.
+   */
+  public function testListAddMethodFromToken(): void {
+    /** @var \Drupal\Core\Action\ActionManager $action_manager */
+    $action_manager = \Drupal::service('plugin.manager.action');
+    /** @var \Drupal\eca\Token\TokenInterface $token_services */
+    $token_services = \Drupal::service('eca.token_services');
+
+    $auth_user = User::load(2);
+    $token_services->addTokenData('auth_user', $auth_user);
+
+    // Without the companion token the sentinel falls back to the documented
+    // default method, which is "append", so the item lands at the end.
+    $this->assertFalse($token_services->hasTokenData('eca_list_add_method'), 'The companion token must not exist yet.');
+    $users = DataTransferObject::create([User::load(0), User::load(1)]);
+    $token_services->addTokenData('users', $users);
+    /** @var \Drupal\eca_base\Plugin\Action\ListAdd $action */
+    $action = $action_manager->createInstance('eca_list_add', [
+      'list_token' => 'users',
+      'method' => '_eca_token',
+      'value' => '[auth_user]',
+    ]);
+    $this->assertCount(2, $users->getProperties());
+    $action->execute();
+    $this->assertCount(3, $users->getProperties());
+    $this->assertSame($auth_user, $users->get(2)->getValue(), 'Without the companion token the method must fall back to "append".');
+
+    // With the companion token the real method is used, so the very same
+    // configuration now puts the item at the front instead.
+    $token_services->addTokenData('eca_list_add_method', 'prepend');
+    $users = DataTransferObject::create([User::load(0), User::load(1)]);
+    $token_services->addTokenData('users', $users);
+    /** @var \Drupal\eca_base\Plugin\Action\ListAdd $action */
+    $action = $action_manager->createInstance('eca_list_add', [
+      'list_token' => 'users',
+      'method' => '_eca_token',
+      'value' => '[auth_user]',
+    ]);
+    $this->assertCount(2, $users->getProperties());
+    $action->execute();
+    $this->assertCount(3, $users->getProperties());
+    $this->assertSame($auth_user, $users->get(0)->getValue(), 'With the companion token the method must be "prepend".');
+    $this->assertSame(User::load(1)->id(), $users->get(2)->getValue()->id());
+  }
+
+  /**
    * Tests the "eca_list_remove" action plugin.
    */
   public function testListRemove(): void {

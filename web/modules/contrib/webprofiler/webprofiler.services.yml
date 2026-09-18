@@ -469,3 +469,7 @@ services:
   monolog.processor.debug:
     class: Drupal\webprofiler\Monolog\Processor\DebugProcessor
     arguments: ['@request_stack']
+
+  Drupal\webprofiler\Hook\WebprofilerHooks:
+    class: Drupal\webprofiler\Hook\WebprofilerHooks
+    autowire: true

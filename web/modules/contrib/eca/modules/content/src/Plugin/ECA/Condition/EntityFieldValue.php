@@ -216,6 +216,7 @@ class EntityFieldValue extends StringComparisonBase {
       '#default_value' => $this->configuration['field_name'] ?? '',
       '#description' => $this->t('The name of the field whose value to compare.'),
       '#weight' => -90,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['expected_value'] = [
       '#type' => 'textfield',
@@ -223,6 +224,7 @@ class EntityFieldValue extends StringComparisonBase {
       '#description' => $this->t('The expected value.'),
       '#default_value' => $this->configuration['expected_value'] ?? '',
       '#weight' => -70,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

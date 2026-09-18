@@ -99,23 +99,41 @@ class Actions {
     $actions = &drupal_static('eca_actions');
     if ($actions === NULL) {
       $this->enableExtendedErrorHandling('Collecting all available actions');
-      $actions = [];
-      foreach ($this->actionManager->getDefinitions() as $plugin_id => $definition) {
-        if (!empty($definition['confirm_form_route_name'])) {
-          // We cannot support actions that redirect to a confirmation form.
-          // @see https://www.drupal.org/project/eca/issues/3279483
-          continue;
-        }
-        if ($definition['id'] === 'entity:save_action') {
-          // We replace all save actions by one generic "Entity: save" action.
-          continue;
-        }
-        if ($action = $this->createInstance($plugin_id)) {
-          $actions[] = $action;
+      // Collect into a local list rather than into the static cache slot.
+      // ::drupal_static() hands out a reference, so populating the slot in
+      // place would publish a partial, unsorted list the moment a throwable
+      // escapes the loop below. Every later call in the request would then
+      // find a non-NULL cache, skip re-collection and silently return that
+      // incomplete list, which makes real plugins look like plugins that do
+      // not exist. Publishing only after sorting succeeded keeps the cache
+      // NULL on failure, so the next caller retries and either succeeds or
+      // throws again.
+      $collected = [];
+      try {
+        foreach ($this->actionManager->getDefinitions() as $plugin_id => $definition) {
+          if (!empty($definition['confirm_form_route_name'])) {
+            // We cannot support actions that redirect to a confirmation form.
+            // @see https://www.drupal.org/project/eca/issues/3279483
+            continue;
+          }
+          if ($definition['id'] === 'entity:save_action') {
+            // We replace all save actions by one generic "Entity: save" action.
+            continue;
+          }
+          if ($action = $this->createInstance($plugin_id)) {
+            $collected[] = $action;
+          }
         }
       }
-      $this->resetExtendedErrorHandling();
-      $this->sortPlugins($actions, $this->extensionManager);
+      finally {
+        // Without this, a throwable from anywhere inside the loop - including
+        // the ::getDefinitions() call itself - would leave error reporting
+        // suppressed and the echoing shutdown function armed for the rest of
+        // the request.
+        $this->resetExtendedErrorHandling();
+      }
+      $this->sortPlugins($collected, $this->extensionManager);
+      $actions = $collected;
     }
     return $actions;
   }

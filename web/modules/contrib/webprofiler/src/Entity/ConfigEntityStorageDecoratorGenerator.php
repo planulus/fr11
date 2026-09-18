@@ -13,14 +13,19 @@ use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Error;
 use PhpParser\Node;
+use PhpParser\Node\Expr\PropertyFetch;
+use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
+use PhpParser\Node\Stmt\Return_;
+use PhpParser\Node\Stmt\Use_;
 use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\FindingVisitor;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\ParserFactory;
-use PhpParser\PrettyPrinter;
+use PhpParser\PrettyPrinter\Standard;
 
 /**
  * Generate decorators for config entity storage classes.
@@ -251,7 +256,7 @@ class ConfigEntityStorageDecoratorGenerator implements DecoratorGeneratorInterfa
     $file->addStmt($generated_class);
 
     $stmts = [$file->getNode()];
-    $prettyPrinter = new PrettyPrinter\Standard();
+    $prettyPrinter = new Standard();
 
     // Add a newline at the end of the file.
     return $prettyPrinter->prettyPrintFile($stmts) . "\n";
@@ -275,16 +280,16 @@ class ConfigEntityStorageDecoratorGenerator implements DecoratorGeneratorInterfa
     }
 
     $generated_body = $factory->methodCall(
-      new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), 'getOriginalObject()'),
+      new PropertyFetch(new Variable('this'), 'getOriginalObject()'),
       $method->name->name,
       \array_map(static function ($param) {
-        return new Node\Expr\Variable($param->var->name);
+        return new Variable($param->var->name);
       }, $method->getParams()),
     );
 
     // If return type is different from void, add a return statement.
-    if (!$method->getReturnType() instanceof Node\Identifier || $method->getReturnType()->name != 'void') {
-      $generated_body = new Node\Stmt\Return_($generated_body);
+    if (!$method->getReturnType() instanceof Identifier || $method->getReturnType()->name != 'void') {
+      $generated_body = new Return_($generated_body);
     }
 
     $generated_method->addStmt($generated_body);
@@ -389,7 +394,7 @@ class ConfigEntityStorageDecoratorGenerator implements DecoratorGeneratorInterfa
     $ast = $this->getAst($classPath);
 
     $visitor = new FindingVisitor(static function (Node $node) {
-      return $node instanceof Node\Stmt\Use_;
+      return $node instanceof Use_;
     });
 
     $traverser = new NodeTraverser();
@@ -400,7 +405,7 @@ class ConfigEntityStorageDecoratorGenerator implements DecoratorGeneratorInterfa
     /** @var \PhpParser\Node\Stmt\Use_[] $nodes */
     $nodes = $visitor->getFoundNodes();
 
-    return \array_map(static function (Node\Stmt\Use_ $node) {
+    return \array_map(static function (Use_ $node) {
       return $node->uses[0]->name->toString();
     }, $nodes);
   }

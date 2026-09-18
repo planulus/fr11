@@ -9,8 +9,10 @@ use Drupal\language\Entity\ContentLanguageSettings;
 use Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationUrl;
 use Drupal\node\Entity\Node;
 use Drupal\Tests\node\Traits\ContentTypeCreationTrait;
+use Drupal\user\Entity\Role;
 use Drupal\user\Entity\User;
 use Drupal\user\Plugin\LanguageNegotiation\LanguageNegotiationUser;
+use Drupal\user\RoleInterface;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
@@ -204,6 +206,94 @@ class EntityExistsTest extends KernelTestBase {
       'properties' => "title: 88888\nuid: 1",
     ] + $defaults);
     $this->assertFalse($condition->evaluate(), 'Node must not exist.');
+
+    $account_switcher->switchBack();
+  }
+
+  /**
+   * Tests that the condition reports a viewable entity matching the properties.
+   *
+   * The property lookup selects a single record. Without access filtering it
+   * may select an entity that the current account may not view, even though
+   * another entity matching the very same properties would have been viewable.
+   * The condition then denies access on that record and reports that no entity
+   * exists, which is a false negative.
+   */
+  public function testEntityExistsByPropertiesAppliesViewAccess(): void {
+    $this->createContentType([
+      'type' => 'article',
+      'name' => 'Article',
+    ]);
+
+    /** @var \Drupal\eca\PluginManager\Condition $condition_manager */
+    $condition_manager = \Drupal::service('plugin.manager.eca.condition');
+    /** @var \Drupal\Core\Session\AccountSwitcherInterface $account_switcher */
+    $account_switcher = \Drupal::service('account_switcher');
+
+    // Two nodes share the same title. The one that must not be viewable is
+    // created first, so that a lookup without access filtering selects it.
+    $unviewable = Node::create([
+      'type' => 'article',
+      'title' => 'Shared title',
+      'langcode' => 'en',
+      'uid' => 1,
+      'status' => 0,
+    ]);
+    $unviewable->save();
+    $viewable = Node::create([
+      'type' => 'article',
+      'title' => 'Shared title',
+      'langcode' => 'en',
+      'uid' => 1,
+      'status' => 1,
+    ]);
+    $viewable->save();
+
+    // This title is only held by a node that must not be viewable.
+    $hidden = Node::create([
+      'type' => 'article',
+      'title' => 'Hidden title',
+      'langcode' => 'en',
+      'uid' => 1,
+      'status' => 0,
+    ]);
+    $hidden->save();
+
+    // An unprivileged account that may only view published content.
+    /** @var \Drupal\user\RoleInterface $role */
+    $role = Role::load(RoleInterface::AUTHENTICATED_ID);
+    $role->grantPermission('access content');
+    $role->save();
+    $account = User::create([
+      'uid' => 2,
+      'name' => 'viewer',
+      'status' => 1,
+    ]);
+    $account->save();
+    $account_switcher->switchTo($account);
+
+    $defaults = [
+      'from' => 'properties',
+      'entity_type' => 'node',
+      'entity_id' => '',
+      'revision_id' => '',
+      'properties' => '',
+      'langcode' => '_interface',
+      'latest_revision' => FALSE,
+      'unchanged' => FALSE,
+    ];
+
+    /** @var \Drupal\eca_content\Plugin\ECA\Condition\EntityExists $condition */
+    $condition = $condition_manager->createInstance('eca_entity_exists', [
+      'properties' => 'title: Shared title',
+    ] + $defaults);
+    $this->assertTrue($condition->evaluate(), 'The condition must report a viewable node matching the properties.');
+
+    /** @var \Drupal\eca_content\Plugin\ECA\Condition\EntityExists $condition */
+    $condition = $condition_manager->createInstance('eca_entity_exists', [
+      'properties' => 'title: Hidden title',
+    ] + $defaults);
+    $this->assertFalse($condition->evaluate(), 'The condition must not report a node that the account may not view.');
 
     $account_switcher->switchBack();
   }

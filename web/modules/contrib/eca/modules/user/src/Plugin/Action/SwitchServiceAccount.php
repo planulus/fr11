@@ -11,13 +11,25 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Switch current account to the service user.
+ *
+ * Like its parent, this action is deliberately not gated on a permission. A low
+ * privileged trigger elevating to the configured service account is the very
+ * point of it, so restricting who may cause the switch is a model restriction
+ * requirement. The parent states that for site builders in its plugin
+ * description and in the notice on its configuration form, which this action
+ * inherits; the ECA settings form says the same where the service account gets
+ * chosen.
+ *
+ * @see \Drupal\eca_user\Plugin\Action\SwitchAccount
+ * @see \Drupal\eca_ui\Form\Settings
+ * @see https://git.drupalcode.org/project/eca/-/work_items/3590400
  */
 #[Action(
   id: 'eca_switch_service_account',
   label: new TranslatableMarkup('User: switch to service user'),
 )]
 #[EcaAction(
-  description: new TranslatableMarkup('Switch to the globally configured service account.'),
+  description: new TranslatableMarkup('Switch to the globally configured service account. Everything after this action runs with the permissions of that account, not with those of the user who triggered the model. ECA does not check any permission before the switch, because elevating from a low privileged trigger to the service account is the very purpose of this action, so restricting it is part of the model: make sure the triggering event and the conditions in front of this action cannot be reached by an account that should not be able to cause the switch, and grant the service account only the permissions that your models actually need.'),
   version_introduced: '2.1.3',
 )]
 class SwitchServiceAccount extends SwitchAccount {

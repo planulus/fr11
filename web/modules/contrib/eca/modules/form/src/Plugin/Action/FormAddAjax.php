@@ -69,6 +69,7 @@ class FormAddAjax extends FormFieldActionBase {
       '#description' => $this->t('Machine names of form fields that should be validated. Define multiple values separated with commas. Example: <em>first_name,last_name</em>. When no fields are defined at all and validation is not disabled above, then the whole form will be validated.'),
       '#weight' => -9,
       '#default_value' => $this->configuration['validate_fields'],
+      '#eca_token_replacement' => TRUE,
     ];
     $form['target'] = [
       '#type' => 'textfield',
@@ -76,6 +77,7 @@ class FormAddAjax extends FormFieldActionBase {
       '#description' => $this->t('The machine name of the form element target to refresh via Ajax. When empty, then the whole form will be refreshed.'),
       '#weight' => -8,
       '#default_value' => $this->configuration['target'],
+      '#eca_token_replacement' => TRUE,
     ];
     $form = parent::buildConfigurationForm($form, $form_state);
     $form['field_name']['#description'] .= ' ' . $this->t('When this form element got Ajax handling attached, using this element will automatically submit the form. Therefore, you can react upon that with regular form events like <em>Build form</em>, <em>Submit form</em> and when validation is enabled, also <em>Validate form</em>.');

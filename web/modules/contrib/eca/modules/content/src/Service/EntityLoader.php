@@ -29,6 +29,17 @@ class EntityLoader {
   use StringTranslationTrait;
 
   /**
+   * Number of records a lookup by properties examines for view access.
+   *
+   * A lookup by properties is meant to identify one particular entity, so a
+   * large number of matches indicates over-broad criteria. Examining a fixed
+   * number of candidates keeps the lookup bounded, while still finding a
+   * viewable entity when the criteria also match entities that the current
+   * account may not view.
+   */
+  protected const MAX_PROPERTY_CANDIDATES = 10;
+
+  /**
    * The entity type manager service.
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
@@ -68,7 +79,7 @@ class EntityLoader {
    *
    * @var string
    */
-  protected string $pluginId;
+  protected string $pluginId = '';
 
   /**
    * Constructs a new EntityLoader object.
@@ -180,7 +191,7 @@ class EntityLoader {
       '#type' => 'textarea',
       '#title' => $this->t('Property values'),
       '#default_value' => $plugin_configuration['properties'],
-      '#description' => $this->t('A key-value list of raw field values of the entity to load. This will only be used when loading by properties is selected above. Supports YAML format. Example:<em><br/>field_mynumber: 1</em>. When using tokens and YAML altogether, make sure that tokens are wrapped as a string. Example: <em>title: "[node:title]"</em>'),
+      '#description' => $this->t('A key-value list of raw field values of the entity to load. This will only be used when loading by properties is selected above. Only an entity that the current user is allowed to view will be loaded. Supports YAML format. Example:<em><br />field_mynumber: 1</em>. When using tokens and YAML altogether, make sure that tokens are wrapped as a string. Example: <em>title: "[node:title]"</em>'),
       '#eca_token_replacement' => TRUE,
       '#states' => [
         'visible' => [
@@ -292,16 +303,16 @@ class EntityLoader {
    * Loads the entity by using the currently given plugin configuration.
    *
    * @param \Drupal\Core\Entity\EntityInterface|null $entity
-   *   (Optional) A passed through entity object.
+   *   A passed through entity object.
    * @param array $plugin_configuration
-   *   (Optional) The plugin configuration values.
+   *   The plugin configuration values.
    * @param string $pluginId
-   *   (Optional) The plugin ID which is calling the method.
+   *   The plugin ID which is calling the method.
    *
    * @return \Drupal\Core\Entity\EntityInterface|null
    *   The loaded entity, or NULL if not found.
    */
-  public function loadEntity(?EntityInterface $entity = NULL, array $plugin_configuration = [], string $pluginId = 'eca_token_load_entity'): ?EntityInterface {
+  public function loadEntity(?EntityInterface $entity, array $plugin_configuration, string $pluginId): ?EntityInterface {
     $this->pluginId = $pluginId;
     $config = $plugin_configuration + $this->defaultConfiguration();
     $token = $this->tokenService;
@@ -343,30 +354,7 @@ class EntityLoader {
             $this->logger->error('Tried parsing properties as YAML format for loading an entity, but parsing failed.');
           }
           if (is_array($properties) && !empty($properties)) {
-            $storage = $this->entityTypeManager->getStorage($entity_type);
-            $query = $storage->getQuery();
-            $query->accessCheck(FALSE);
-            foreach ($properties as $name => $value) {
-              // Cast scalars to array so we can consistently use an IN
-              // condition.
-              // @see \Drupal\Core\Entity\EntityStorageBase::buildPropertyQuery
-              $query->condition($name, (array) $value, 'IN');
-            }
-            // Make sure to load at most one record.
-            $query->range(0, 1);
-
-            $result = $query->execute();
-            /** @var int[] $result */
-            array_walk($result, static function (&$item) {
-              $item = (int) $item;
-            });
-            /**
-             * @var \Drupal\Core\Entity\EntityInterface[] $entities
-             */
-            $entities = $result ? $storage->loadMultiple($result) : [];
-            if ($first = reset($entities)) {
-              $entity = $first;
-            }
+            $entity = $this->loadFirstViewableEntity($entity_type, $properties);
           }
         }
         break;
@@ -421,6 +409,63 @@ class EntityLoader {
     }
 
     return $entity;
+  }
+
+  /**
+   * Loads the first entity matching the given properties that may be viewed.
+   *
+   * A lookup by properties may match more than one entity, of which only some
+   * are viewable by the current account. Picking an arbitrary match and having
+   * the calling plugin deny access on it would report that no entity exists,
+   * even though a viewable entity matching the very same properties does. The
+   * first viewable match is therefore returned.
+   *
+   * Access is verified for every candidate rather than being left to the query
+   * alone, because query level access only filters entity types whose access
+   * handler tags entity queries, and even for those it is a coarse grained
+   * filter that the entity access handler may still refine.
+   *
+   * @param string $entity_type
+   *   The ID of the entity type to look up.
+   * @param array $properties
+   *   The property values to filter by.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface|null
+   *   The first viewable entity, or NULL if there is no viewable match.
+   */
+  protected function loadFirstViewableEntity(string $entity_type, array $properties): ?EntityInterface {
+    $storage = $this->entityTypeManager->getStorage($entity_type);
+    $query = $storage->getQuery();
+    $query->accessCheck(TRUE);
+    foreach ($properties as $name => $value) {
+      // Cast scalars to array so we can consistently use an IN condition.
+      // @see \Drupal\Core\Entity\EntityStorageBase::buildPropertyQuery
+      $query->condition($name, (array) $value, 'IN');
+    }
+    // Sort by ID so that the selected record is reproducible instead of
+    // depending on the order in which the database happens to return rows.
+    if ($id_key = $storage->getEntityType()->getKey('id')) {
+      $query->sort($id_key);
+    }
+    $query->range(0, self::MAX_PROPERTY_CANDIDATES);
+
+    $result = $query->execute();
+    /** @var int[] $result */
+    array_walk($result, static function (&$item) {
+      $item = (int) $item;
+    });
+    /**
+     * @var \Drupal\Core\Entity\EntityInterface[] $entities
+     */
+    $entities = $result ? $storage->loadMultiple($result) : [];
+    // Keep the order of the query result, which loadMultiple() does not
+    // guarantee, so that the first viewable match is returned.
+    foreach ($result as $id) {
+      if (isset($entities[$id]) && $entities[$id]->access('view')) {
+        return $entities[$id];
+      }
+    }
+    return NULL;
   }
 
   /**

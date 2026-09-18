@@ -4,6 +4,7 @@ namespace Drupal\Tests\eca\Kernel;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Form\FormState;
+use Drupal\Core\Logger\RfcLogLevel;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\eca\Plugin\Action\ActionInterface;
@@ -105,6 +106,55 @@ class PluginConfigFormTest extends KernelTestBase {
         $this->doExecute('action', $action->getPluginId(), $action);
       }
     }
+  }
+
+  /**
+   * Positive control for the three assertEmpty() calls in ::doExecute().
+   *
+   * ::doExecute() asserts three times that the buffering logger registered as
+   * self::$testLogServiceName is empty after a plugin has built, validated and
+   * submitted its configuration form. On its own, an empty collector is
+   * ambiguous: it means either that no plugin logged an error, or that nothing
+   * is being collected at all. Nothing else in this class can tell those two
+   * states apart. So if the path from the plugins to that service ever broke -
+   * the "logger" tag disappearing from ::register(), the logger factory no
+   * longer passing its collected loggers on to the ECA channel, or the
+   * "log_level" setting of "eca.settings" dropping below RfcLogLevel::ERROR -
+   * then all three assertions would keep passing, the suite would stay green,
+   * and the coverage would silently be worth nothing.
+   *
+   * This test removes that ambiguity by logging an error through the very
+   * service the plugins log through, "logger.channel.eca", and asserting that
+   * the collector picks it up. It therefore fails exactly when those three
+   * assertions would have turned vacuous, and it does not duplicate them: they
+   * go red when a plugin logs something, this one goes red when nothing can be
+   * collected any more.
+   *
+   * @see \Drupal\eca\Plugin\Action\ActionBase::create()
+   * @see \Drupal\eca\ConfigurableLoggerChannel::log()
+   */
+  public function testLogCollectorPositiveControl(): void {
+    $message = 'Positive control entry for the ECA log collector.';
+
+    // Log through the same channel service that the plugins are given, so that
+    // this test exercises the collection path ::doExecute() relies on instead
+    // of a logger of its own making. A logger set up here would look like
+    // coverage without proving that the plugins reach the collector.
+    $this->container->get('logger.channel.eca')->error($message);
+
+    $log_messages = $this->container->get(self::$testLogServiceName)->cleanLogs();
+    $this->assertCount(1, $log_messages, 'The test logger should collect what ECA plugins log through their logger channel.');
+    // BufferingLogger keeps every entry as [level, message, context].
+    [$level, $collected_message, $context] = $log_messages[0];
+    $this->assertSame(RfcLogLevel::ERROR, $level, 'The collected entry should keep the severity it was logged with.');
+    $this->assertSame($message, $collected_message, 'The collected entry should be the one this test logged.');
+    $this->assertSame('eca', $context['channel'] ?? NULL, 'The collected entry should have passed through the ECA logger channel.');
+
+    // Reading the entries above already drained the collector, so this test
+    // leaves nothing behind that could make an assertEmpty() in ::doExecute()
+    // fail. Each test method runs in its own process and setUp() empties the
+    // collector as well, but stating it here keeps the guarantee local.
+    $this->assertEmpty($this->container->get(self::$testLogServiceName)->cleanLogs(), 'This test should not leave a collected entry behind.');
   }
 
   /**

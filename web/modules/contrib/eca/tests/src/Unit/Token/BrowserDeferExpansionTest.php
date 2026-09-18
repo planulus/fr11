@@ -150,7 +150,7 @@ class BrowserDeferExpansionTest extends TestCase {
     $hash = 'abc123';
     $compressed = $this->compress($this->markerBearingHistory());
 
-    $privateStore = $this->createMock(PrivateTempStore::class);
+    $privateStore = $this->createStub(PrivateTempStore::class);
     $privateStore->method('get')->willReturnCallback(
       static fn(string $key) => $key === $hash ? $compressed : NULL,
     );
@@ -171,7 +171,7 @@ class BrowserDeferExpansionTest extends TestCase {
     $event = 'eca_model::event';
     $compressed = $this->compress($this->markerBearingHistory());
 
-    $sharedStore = $this->createMock(SharedTempStore::class);
+    $sharedStore = $this->createStub(SharedTempStore::class);
     $sharedStore->method('get')->willReturnCallback(
       static fn(string $key) => $key === $event ? $compressed : NULL,
     );
@@ -193,7 +193,7 @@ class BrowserDeferExpansionTest extends TestCase {
     $event = 'eca_model::event';
     $compressed = $this->compress(['history' => $this->markerBearingHistory()]);
 
-    $sharedStore = $this->createMock(SharedTempStore::class);
+    $sharedStore = $this->createStub(SharedTempStore::class);
     $sharedStore->method('get')->willReturnCallback(
       static function (string $key) use ($jobId, $event, $compressed) {
         return match ($key) {

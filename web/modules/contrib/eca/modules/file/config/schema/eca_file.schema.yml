@@ -15,7 +15,7 @@ action.configuration.eca_file_rename:
       type: string
       label: 'Behavior'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca_file\Plugin\Action\FileRename::getAllValidFileBehaviors'
         NotBlank: []
     object:

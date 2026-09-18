@@ -126,6 +126,7 @@ abstract class FormAddFieldActionBase extends FormActionBase {
       '#weight' => -90,
       '#default_value' => $this->configuration['name'],
       '#required' => TRUE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['title'] = [
       '#type' => 'textfield',
@@ -134,6 +135,7 @@ abstract class FormAddFieldActionBase extends FormActionBase {
       '#weight' => -80,
       '#default_value' => $this->configuration['title'],
       '#required' => TRUE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['description'] = [
       '#type' => 'textarea',
@@ -141,6 +143,7 @@ abstract class FormAddFieldActionBase extends FormActionBase {
       '#description' => $this->t('The description of the field to be added.'),
       '#weight' => -70,
       '#default_value' => $this->configuration['description'],
+      '#eca_token_replacement' => TRUE,
     ];
     $form['required'] = [
       '#type' => 'checkbox',
@@ -155,6 +158,7 @@ abstract class FormAddFieldActionBase extends FormActionBase {
       '#description' => $this->t('The default value if the field is empty.'),
       '#weight' => -30,
       '#default_value' => $this->configuration['default_value'],
+      '#eca_token_replacement' => TRUE,
     ];
     $form['weight'] = [
       '#type' => 'number',

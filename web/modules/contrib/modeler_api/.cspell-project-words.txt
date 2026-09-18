@@ -1,4 +1,5 @@
 autohide
+dedup
 fontawesome
 inlinehilite
 linenums

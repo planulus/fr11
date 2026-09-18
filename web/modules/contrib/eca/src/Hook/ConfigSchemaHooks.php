@@ -8,6 +8,7 @@ use Drupal\eca\Plugin\Action\ActionInterface;
 use Drupal\Component\Plugin\ConfigurableInterface;
 use Drupal\eca\Service\Actions;
 use Drupal\eca\Service\Conditions;
+use Drupal\eca\Service\Events;
 
 /**
  * Provides hooks related to config schemas.
@@ -22,6 +23,7 @@ class ConfigSchemaHooks {
   public function __construct(
     protected Actions $actionService,
     protected Conditions $conditionsService,
+    protected Events $eventsService,
     protected EntityTypeManagerInterface $entityTypeManager,
   ) {}
 
@@ -53,6 +55,12 @@ class ConfigSchemaHooks {
     }
     foreach ($this->conditionsService->conditions() as $condition) {
       $key = 'eca.condition.plugin.' . $condition->getPluginId();
+      if (isset($definitions[$key])) {
+        $this->alterSchemaFieldType($definitions, $key);
+      }
+    }
+    foreach ($this->eventsService->events() as $event) {
+      $key = 'eca.event.plugin.' . $event->getPluginId();
       if (isset($definitions[$key])) {
         $this->alterSchemaFieldType($definitions, $key);
       }

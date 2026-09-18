@@ -81,6 +81,10 @@ final class Browser {
   /**
    * List of normalized values plus a hash of the original value.
    *
+   * Scoped to a single execution chain, not to the lifetime of this service:
+   * the Processor clears it at the root execution boundary. See
+   * ::resetProcessedValues() for why that matters.
+   *
    * @var array
    */
   private array $processedValues = [];
@@ -393,6 +397,30 @@ final class Browser {
   }
 
   /**
+   * Releases the cache of normalized token values.
+   *
+   * This service is a plain shared service, so a single instance lives for the
+   * whole container lifetime, while the normalized value cache is only useful
+   * within one execution chain. Releasing it at the end of that chain bounds
+   * the memory it holds: every cached entry keeps a fully normalized sub-tree
+   * of an entity, and in a long-running single process - drush cron, a queue
+   * worker, a batch - nothing else would ever let go of them.
+   *
+   * Correctness does not depend on this. The validity hash is taken over the
+   * data a token resolves to, so a change is noticed wherever it happens,
+   * including between two steps of one chain.
+   *
+   * The cache within a chain is untouched: only the Processor calls this, at
+   * the root execution boundary where it also forgets its execution history.
+   *
+   * @see \Drupal\eca\Token\Browser::validityHash()
+   * @see \Drupal\eca\Processor::execute()
+   */
+  public function resetProcessedValues(): void {
+    $this->processedValues = [];
+  }
+
+  /**
    * Normalizes all current token data.
    *
    * @param string $eventName
@@ -426,6 +454,13 @@ final class Browser {
         'eventClass' => $definition['event_class'],
       ];
     }
+    // The data a provider contributes, captured while checking whether the
+    // token exists at all, keyed by token key. $data holds the #[Token]
+    // attribute for those keys - deliberately, because ::normalizeValue()
+    // builds the property tree from the attribute - so the attribute is all
+    // the validity hash would otherwise have to go on, and that is
+    // content-identical on every pass.
+    $resolvedValues = [];
     /** @var \Drupal\eca\Attribute\Token $supportedToken */
     foreach ($this->getSupportedTokens($this->eventClasses[$eventName]['class'], $this->eventClasses[$eventName]['eventClass']) as $supportedToken) {
       // Make sure this is not overriding an existing token. Try to find an
@@ -445,8 +480,16 @@ final class Browser {
       }
       // Only add the token if it actually exists. An example of a declared but
       // often not existing token is the session_user.
-      if ($this->token->hasTokenData($key)) {
+      //
+      // ::hasTokenData() is defined as a NULL check on ::getTokenData(), so
+      // resolving here costs exactly what the existence check already cost,
+      // and it hands the validity hash the data it needs without a second
+      // resolve.
+      // @see \Drupal\eca\Token\TokenDecoratorTrait::hasTokenData()
+      $resolvedValue = $this->token->getTokenData($key);
+      if ($resolvedValue !== NULL) {
         $data[$key] = $supportedToken;
+        $resolvedValues[$key] = $resolvedValue;
       }
     }
     // Query dynamic data providers for their available keys. This covers
@@ -509,14 +552,7 @@ final class Browser {
           $entityIndex[$entityKey] = $key;
         }
       }
-      try {
-        $hash = md5(serialize($value));
-      }
-      catch (\Throwable) {
-        // If serialization fails (e.g. closures or resources in the data),
-        // use a unique hash so the value is always re-normalized.
-        $hash = md5((new Random())->string(16));
-      }
+      $hash = $this->validityHash($key, $value, $resolvedValues);
       if (!isset($this->processedValues[$key]) || $this->processedValues[$key]['hash'] !== $hash) {
         $this->processedValues[$key] = [
           'data' => $this->normalizeValue($key, $value),
@@ -528,6 +564,48 @@ final class Browser {
     uasort($normalizedData, static fn(array $a, array $b) => strnatcasecmp($a['label'], $b['label']));
     $this->isRunning = FALSE;
     return $normalizedData;
+  }
+
+  /**
+   * Computes the cache validity hash for one token value.
+   *
+   * The hash has to change whenever the data behind a token changes, because
+   * it is the only thing standing between a debug step and a stale
+   * normalization. Hashing the value stored in the token data array is right
+   * for anything put there directly, but wrong for a token contributed by a
+   * DataProviderInterface: what is stored for those is the #[Token] attribute
+   * that declared the token, which is content-identical on every pass while
+   * the data it resolves to is not.
+   *
+   * The resolved data therefore gets hashed instead. It is normally already at
+   * hand, because ::normalizedTokenData() captured it when it checked whether
+   * the token exists at all; the fallback only covers an attribute that
+   * reached the token data array by some other route.
+   *
+   * @param string $key
+   *   The token key.
+   * @param mixed $value
+   *   The token value as stored in the token data array.
+   * @param array $resolvedValues
+   *   The already resolved provider data, keyed by token key.
+   *
+   * @return string
+   *   The validity hash.
+   */
+  private function validityHash(string $key, mixed $value, array $resolvedValues): string {
+    try {
+      if ($value instanceof Token) {
+        $value = array_key_exists($key, $resolvedValues)
+          ? $resolvedValues[$key]
+          : $this->token->getTokenData($key);
+      }
+      return md5(serialize($value));
+    }
+    catch (\Throwable) {
+      // If resolving or serialization fails (e.g. closures or resources in
+      // the data), use a unique hash so the value is always re-normalized.
+      return md5((new Random())->string(16));
+    }
   }
 
   /**
@@ -656,20 +734,34 @@ final class Browser {
    * @param string $tokenType
    *   The token type to normalize (e.g. 'node').
    * @param array $data
-   *   The data for token replacement.
+   *   The data for token replacement. This stays bound to the root context
+   *   for the whole recursion, because the token paths built below are
+   *   root-anchored chains (e.g. '[node:author:name]') that can only be
+   *   resolved against the data the chain starts from.
    * @param int $depth
    *   The current recursion depth.
    * @param array $visited
    *   A per-path set of already expanded entities, keyed by
    *   "entityType:id". See normalizeValue() for the semantics.
+   * @param \Drupal\Core\Entity\ContentEntityInterface|null $currentEntity
+   *   The content entity whose tokens are being normalized at this level, or
+   *   NULL when this level does not belong to a resolvable entity. Unlike
+   *   $data this does follow the chain, and it is used exclusively by the
+   *   cycle guard below. It defaults to the source entity of $data, which is
+   *   the correct value for the top level.
    *
    * @return array
    *   The normalized data for this level.
    */
-  private function normalizeRecursive(string $tokenPath, string $tokenType, array $data, int $depth = 1, array $visited = []): array {
+  private function normalizeRecursive(string $tokenPath, string $tokenType, array $data, int $depth = 1, array $visited = [], ?ContentEntityInterface $currentEntity = NULL): array {
     $normalized = [];
     if ($depth > $this->depth() || !isset($this->tokenInfo['tokens'][$tokenType])) {
       return $normalized;
+    }
+
+    if ($currentEntity === NULL) {
+      $source = reset($data);
+      $currentEntity = $source instanceof ContentEntityInterface ? $source : NULL;
     }
 
     foreach ($this->tokenInfo['tokens'][$tokenType] as $dataKey => $dataValue) {
@@ -714,11 +806,24 @@ final class Browser {
         // (owner -> user_picture -> owner) while still allowing distinct
         // entities of the same type to be expanded (user A -> user B).
         //
+        // The trailing segment of $currentTokenPath is a field of the entity
+        // this level belongs to, so the lookup has to be made against
+        // $currentEntity and not against $data. Issue #3590450: $data was
+        // used here, which meant the root entity was asked for a field of a
+        // nested one. That lookup missed, the guard was skipped instead of
+        // consulted, and a back-referenced entity was expanded a second time
+        // along one path.
+        //
+        // A NULL result is not a cycle verdict but an unresolved reference:
+        // the segment does not name an entity-reference field of
+        // $currentEntity, or the current level has no entity at all. The
+        // depth budget remains the backstop for those branches.
+        //
         // The lookup is restricted to a single resolved entity and is
         // therefore cheap; non-entity sub-tokens (dates, plain references)
         // are unaffected. The $visited set is passed by value, so sibling
         // branches keep their own view.
-        $referenced = $this->resolveReferencedEntity($currentTokenPath, $data);
+        $referenced = $this->resolveReferencedEntity($currentTokenPath, $currentEntity);
         if ($referenced instanceof ContentEntityInterface && !$this->canExpandEntity($referenced, $depth + 1, $visited)) {
           continue;
         }
@@ -727,7 +832,12 @@ final class Browser {
         // don't replace the token itself, because that could be very
         // expensive, i.e. if the current token is an entity that would be
         // fully rendered when used in token replacement.
-        $nestedData = $this->normalizeRecursive($currentTokenPath, $subType, $data, $depth + 1, $childVisited);
+        //
+        // $data deliberately stays the root context so that token
+        // replacement keeps working for the root-anchored chains built at
+        // the deeper levels; only the cycle guard follows the chain, through
+        // $referenced.
+        $nestedData = $this->normalizeRecursive($currentTokenPath, $subType, $data, $depth + 1, $childVisited, $referenced);
         if (!empty($nestedData)) {
           $normalized[$dataKey]['data'] = $nestedData;
         }
@@ -867,27 +977,31 @@ final class Browser {
   /**
    * Resolves the content entity a sub-token refers to, if any.
    *
-   * This inspects the source entity in the current token data context and,
-   * when the trailing token segment maps to an entity-reference field,
-   * returns the first referenced content entity. It is intentionally cheap:
-   * it only ever loads a single referenced entity and never triggers token
-   * replacement or rendering. It is used purely for per-path cycle
-   * detection; callers must treat a NULL result as "not a tracked entity
-   * reference" and continue normally.
+   * This inspects the entity the current level belongs to and, when the
+   * trailing token segment maps to an entity-reference field, returns the
+   * first referenced content entity. It is intentionally cheap: it only ever
+   * loads a single referenced entity and never triggers token replacement or
+   * rendering. It is used purely for per-path cycle detection; callers must
+   * treat a NULL result as "not a tracked entity reference" and continue
+   * normally.
+   *
+   * The source entity is passed in rather than read from the token data
+   * context, because that context stays bound to the root of the chain for
+   * the benefit of token replacement, while the trailing segment belongs to
+   * the entity reached at the current level. See ::normalizeRecursive().
    *
    * @param string $tokenPath
    *   The current token path (e.g. 'node:author' or 'node:employer_id').
-   * @param array $data
-   *   The token data context for the current level. The source entity is the
-   *   first element.
+   * @param \Drupal\Core\Entity\ContentEntityInterface|null $source
+   *   The entity the trailing segment is a field of, or NULL when the
+   *   current level does not belong to a resolvable entity.
    *
    * @return \Drupal\Core\Entity\ContentEntityInterface|null
    *   The referenced content entity, or NULL when the segment does not
    *   resolve to a loadable entity reference.
    */
-  private function resolveReferencedEntity(string $tokenPath, array $data): ?ContentEntityInterface {
-    $source = reset($data);
-    if (!($source instanceof ContentEntityInterface)) {
+  private function resolveReferencedEntity(string $tokenPath, ?ContentEntityInterface $source): ?ContentEntityInterface {
+    if ($source === NULL) {
       return NULL;
     }
     $segments = explode(':', $tokenPath);

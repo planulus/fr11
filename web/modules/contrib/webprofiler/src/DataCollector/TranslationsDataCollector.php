@@ -44,7 +44,7 @@ class TranslationsDataCollector extends DataCollector implements HasPanelInterfa
   /**
    * {@inheritdoc}
    */
-  public function getName() {
+  public function getName(): string {
     return 'translations';
   }
 

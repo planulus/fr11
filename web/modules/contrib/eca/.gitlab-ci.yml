@@ -7,8 +7,11 @@ include:
       - '/includes/include.drupalci.workflows.yml'
 
 variables:
+  _AUTORUN_NEXT_MAJOR: 'push-and-schedule'
+  _AUTORUN_NEXT_MINOR: 'push-and-schedule'
   _CSPELL_IGNORE_PATHS: '"**/eca.eca.*.yml"'
   _PHPUNIT_CONCURRENT: 1
+  _PHPUNIT_EXTRA: '--suppress-deprecations'
   OPT_IN_TEST_PREVIOUS_MAJOR: 0
   OPT_IN_TEST_NEXT_MINOR: 1
   OPT_IN_TEST_NEXT_MAJOR: 1
@@ -22,9 +25,8 @@ phpstan:
   allow_failure: false
 phpstan (next minor):
   allow_failure: false
-# Allow failure until Drush can be installed with Drupal 12
 phpstan (next major):
-  allow_failure: true
+  allow_failure: false
 phpunit (previous major):
   allow_failure: false
 phpunit (next minor):

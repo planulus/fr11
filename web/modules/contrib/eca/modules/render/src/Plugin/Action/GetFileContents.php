@@ -45,6 +45,7 @@ class GetFileContents extends RenderElementActionBase {
       '#weight' => -100,
       '#default_value' => $this->configuration['uri'],
       '#required' => TRUE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['encoding'] = [
       '#type' => 'select',

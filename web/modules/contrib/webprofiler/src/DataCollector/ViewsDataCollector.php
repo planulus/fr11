@@ -57,7 +57,7 @@ class ViewsDataCollector extends DataCollector implements HasPanelInterface {
         ];
 
         $entity = $storage->load($view->storage->id());
-        if ($entity->hasLinkTemplate('edit-display-form')) {
+        if ($entity?->hasLinkTemplate('edit-display-form') ?? FALSE) {
           $route = $entity->toUrl('edit-display-form');
           $route->setRouteParameter('display_id', $view->current_display);
           $data['route'] = $route->toString();

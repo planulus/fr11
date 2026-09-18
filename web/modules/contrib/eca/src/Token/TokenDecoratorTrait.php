@@ -2,6 +2,7 @@
 
 namespace Drupal\eca\Token;
 
+use Drupal\Component\Plugin\PluginBase;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Plugin\DataType\EntityAdapter;
@@ -237,7 +238,12 @@ trait TokenDecoratorTrait {
     }
     else {
       $entity_type_manager = \Drupal::entityTypeManager();
-      if ($entity_type_manager->hasDefinition($token_type)) {
+      // A token type containing the derivative separator can never be a raw
+      // top-level entity type ID. Skip the direct lookup for such values
+      // because Drupal core now throws a LogicException ("Bundle entity types
+      // are not supported directly.") when getDefinition()/hasDefinition() is
+      // called with a bundle-style ID containing the separator.
+      if (!str_contains($token_type, PluginBase::DERIVATIVE_SEPARATOR) && $entity_type_manager->hasDefinition($token_type)) {
         $entity_type_id = $token_type;
       }
       // Special handling for taxonomy.

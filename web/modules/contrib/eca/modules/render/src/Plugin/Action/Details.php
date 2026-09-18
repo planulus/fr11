@@ -74,6 +74,7 @@ class Details extends RenderElementActionBase {
       '#weight' => -9,
       '#default_value' => $this->configuration['title'],
       '#required' => TRUE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['open'] = [
       '#type' => 'checkbox',
@@ -88,6 +89,7 @@ class Details extends RenderElementActionBase {
       '#weight' => -5,
       '#default_value' => $this->configuration['introduction_text'],
       '#required' => FALSE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['summary_value'] = [
       '#type' => 'textarea',
@@ -95,6 +97,7 @@ class Details extends RenderElementActionBase {
       '#weight' => -4,
       '#default_value' => $this->configuration['summary_value'],
       '#required' => FALSE,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

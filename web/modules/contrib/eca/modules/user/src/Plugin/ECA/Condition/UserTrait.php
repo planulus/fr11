@@ -76,6 +76,7 @@ trait UserTrait {
       '#description' => $this->t('The ID of an account or a token with a stored account entity.'),
       '#default_value' => $this->configuration['account'],
       '#weight' => -20,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

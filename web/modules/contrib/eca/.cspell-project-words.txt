@@ -9,6 +9,7 @@ bodyvalue
 bundlecreate
 bundledelete
 conditionid
+conditionlabel
 cplain
 customprop
 danse
@@ -24,8 +25,10 @@ floodblockip
 floodblockuser
 formstate
 fromstate
+glab
 greaterthan
 grienauer
+headerless
 hiddenfield
 htmx
 hx
@@ -33,6 +36,7 @@ idmap
 idplaceholder
 ifnotexists
 issuu
+jsonurl
 keyvalueexpirablestore
 keyvaluestore
 lessthan
@@ -68,6 +72,7 @@ nodocs
 nonexistentfield
 nwdug
 optionsfield
+pasteable
 phpunitmodule
 pluginid
 postbuild
@@ -89,6 +94,7 @@ sharedtempstore
 sidplaceholder
 solcast
 someprop
+ssti
 storageload
 successorid
 successorlabel

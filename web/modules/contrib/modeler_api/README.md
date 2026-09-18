@@ -60,6 +60,12 @@ built from scratch:
   YAML-based plugins that curate which components appear in the modeler UI
   (contexts), restrict valid component orderings (dependencies), or define
   template token trees -- all without writing PHP.
+- **Canvas themes** -- Every modeler ships a default look and feel. Any module
+  can contribute themes in YAML that point at asset libraries, and a site
+  builder selects one per owner/modeler combination. A theme built for a
+  specific owner or modeler applies automatically as soon as its module is
+  installed, without any configuration. The API attaches the CSS centrally, so
+  every modeler benefits without any change on its side.
 - **Testing and replay** -- Model owners can opt in to in-modeler testing
   (start/poll async test jobs) and execution replay (load trace data per
   component), with the API providing the endpoints and UI integration.
@@ -87,7 +93,7 @@ never touch each other directly.
 
 ## Plugin system
 
-The module provides 5 plugin types:
+The module provides 6 plugin types:
 
 | Plugin type        | Discovery                                       | Purpose                                                     |
 |--------------------|-------------------------------------------------|-------------------------------------------------------------|
@@ -96,8 +102,9 @@ The module provides 5 plugin types:
 | **Context**        | YAML (`MODULE.modeler_api.contexts.yml`)        | Curates which components appear per use case                |
 | **Dependency**     | YAML (`MODULE.modeler_api.dependencies.yml`)    | Constrains valid component orderings                        |
 | **Template Token** | YAML (`MODULE.modeler_api.template_tokens.yml`) | Defines token trees for model templates                     |
+| **Theme**          | YAML (`MODULE.modeler_api.themes.yml`)          | Styles the canvas per owner/modeler combination             |
 
-All five plugin types support alter hooks for programmatic modifications by
+All six plugin types support alter hooks for programmatic modifications by
 other modules.
 
 ## Known model owners
@@ -148,7 +155,7 @@ drush en eca_ui bpmn_io
 
 After installation, visit **Administration > Configuration > Workflow >
 Modeler API** (`/admin/config/workflow/modeler_api`) to configure which
-modeler and storage method to use for each model owner.
+theme and storage method to use for each model owner and modeler combination.
 
 ## Documentation
 

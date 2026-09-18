@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\webprofiler\FunctionalJavascript;
 
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 
 /**
@@ -11,6 +13,8 @@ use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
  *
  * @group webprofiler
  */
+#[Group('webprofiler')]
+#[RunTestsInSeparateProcesses]
 class ToolbarTest extends WebDriverTestBase {
 
   /**
@@ -103,7 +107,9 @@ class ToolbarTest extends WebDriverTestBase {
       ->find('css', '.sf-toolbar-block-request')
       ->getHtml();
     static::assertStringContainsString('EntityViewController :: view', $text);
-    static::assertStringContainsString('phpstorm://open?file=/builds/project/webprofiler/web/core/lib/Drupal/Core/Entity/Controller/EntityViewController.php&amp;line=131', $text);
+
+    $file = \Drupal::root() . '/core/lib/Drupal/Core/Entity/Controller/EntityViewController.php';
+    static::assertStringContainsString('phpstorm://open?file=' . $file . '&amp;line=131', $text);
   }
 
 }

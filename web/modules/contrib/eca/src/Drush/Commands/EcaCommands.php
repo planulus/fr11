@@ -2,7 +2,6 @@
 
 namespace Drupal\eca\Drush\Commands;
 
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drush\Attributes\Command;
 use Drush\Attributes\Usage;
@@ -15,11 +14,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 final class EcaCommands extends DrushCommands {
 
   /**
-   * ECA config entity storage manager.
+   * The entity type manager.
    *
-   * @var \Drupal\Core\Entity\EntityStorageInterface
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  protected EntityStorageInterface $configStorage;
+  protected EntityTypeManagerInterface $entityTypeManager;
 
   /**
    * Constructs an EcaCommands object.
@@ -28,7 +27,7 @@ final class EcaCommands extends DrushCommands {
     EntityTypeManagerInterface $entityTypeManager,
   ) {
     parent::__construct();
-    $this->configStorage = $entityTypeManager->getStorage('eca');
+    $this->entityTypeManager = $entityTypeManager;
   }
 
   /**
@@ -53,7 +52,7 @@ final class EcaCommands extends DrushCommands {
   #[Usage(name: 'eca:subscriber:rebuild', description: 'Rebuild the state of subscribed events.')]
   public function rebuildSubscribedEvents(): void {
     /** @var \Drupal\eca\Entity\EcaStorage $storage */
-    $storage = $this->configStorage;
+    $storage = $this->entityTypeManager->getStorage('eca');
     $storage->rebuildSubscribedEvents();
   }
 

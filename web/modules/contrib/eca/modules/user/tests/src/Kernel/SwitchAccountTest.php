@@ -43,6 +43,17 @@ class SwitchAccountTest extends KernelTestBase {
   /**
    * Tests SwitchAccount.
    *
+   * The access() assertions below are not an oversight. This action is
+   * deliberately not gated on a permission: switching the account is the very
+   * purpose of it, and gating it on a permission held by the account *before*
+   * the switch would defeat the service account pattern it exists for.
+   * Restricting who may cause the switch is a model restriction requirement,
+   * documented in the plugin description and on the configuration form. The
+   * assertions pin that deliberate permissiveness, so that turning it into a
+   * permission check cannot happen silently.
+   *
+   * @see https://git.drupalcode.org/project/eca/-/work_items/3590400
+   *
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
   public function testSwitchAccount(): void {

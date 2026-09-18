@@ -1,8 +1,8 @@
----
-title: "{{ provider_name }}"
-tags:
-- module
----
+{# The front matter is serialized by DocsCommands::providerFrontMatter(). Never
+   write YAML by hand here: the provider name is the arbitrary "name" string of
+   a module's info.yml and may carry quotes, ": " sequences or significant
+   leading whitespace, none of which survive hand-written interpolation. -#}
+{{ front_matter|raw }}
 # {{ provider_name }}
 
 {!include/modules/{{ provider }}.md!}

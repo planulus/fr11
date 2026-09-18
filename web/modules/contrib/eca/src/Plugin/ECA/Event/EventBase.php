@@ -182,7 +182,7 @@ abstract class EventBase extends EcaPluginBase implements EventInterface {
   private function renderToken(Token $token, string $prefix = ''): array {
     $tokens = [];
     $name = $prefix . $token->name;
-    $tokens[] = '<p><strong>[' . $name . ']:</strong> ' . $token->description . ($token->aliases ? '<br/>(Alias: ' . implode(', ', $token->aliases) . ')' : '') . '</p>';
+    $tokens[] = '<p><strong>[' . $name . ']:</strong> ' . $token->description . ($token->aliases ? '<br />(Alias: ' . implode(', ', $token->aliases) . ')' : '') . '</p>';
     foreach ($token->properties as $property) {
       $tokens += $this->renderToken($property, $name);
     }

@@ -67,6 +67,7 @@ class CloneEntity extends ConfigurableActionBase {
       '#default_value' => $this->configuration['label'],
       '#description' => $this->t('The label of the new entity.'),
       '#weight' => -30,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['published'] = [
       '#type' => 'checkbox',
@@ -81,6 +82,7 @@ class CloneEntity extends ConfigurableActionBase {
       '#default_value' => $this->configuration['owner'],
       '#description' => $this->t('The owner UID of the new entity.'),
       '#weight' => -10,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

@@ -20,8 +20,13 @@ class FloatOrToken extends FloatData implements StringInterface {
    * {@inheritdoc}
    */
   public function getCastedValue() {
-    if (str_starts_with($this->value, '[') && str_ends_with($this->value, ']')) {
-      return (string) $this->value;
+    // Any non-numeric string is passed through unchanged, not only a value
+    // shaped like "[a:token]". ECA stores other non-numeric placeholders in
+    // numeric configuration keys too, most notably the "_eca_token" sentinel of
+    // a select element offering "Defined by token", and casting those to a
+    // float would silently lose them just the same.
+    if (is_string($this->value) && $this->value !== '' && !is_numeric($this->value)) {
+      return $this->value;
     }
     return (float) $this->value;
   }

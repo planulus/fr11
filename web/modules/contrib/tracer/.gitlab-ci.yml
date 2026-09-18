@@ -6,6 +6,12 @@ include:
       - '/includes/include.drupalci.variables.yml'
       - '/includes/include.drupalci.workflows.yml'
 
+variables:
+  # Merge request pipelines check out a detached HEAD, so Composer derives the
+  # root package version from the commit hash. drupal/webprofiler, a dev
+  # dependency, requires drupal/tracer ^1.2, and a hash cannot satisfy it.
+  COMPOSER_ROOT_VERSION: 1.2.x-dev
+
 phpcs:
   allow_failure: false
 

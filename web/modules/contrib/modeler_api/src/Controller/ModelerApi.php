@@ -332,6 +332,10 @@ final class ModelerApi extends ControllerBase {
         $data = ['error' => 'Component ID not specified.'];
       }
       else {
+        // The replay data is intentionally passed through to the response
+        // unmodified. It may contain deduplication/reference markers (e.g.
+        // "@ref"/"@prev") that the modeler frontend expands lazily at display
+        // time, so the Modeler API must not expand or transform it here.
         $data = $owner->getReplayDataByComponent($json_data['modelId'], $json_data['componentId']);
       }
     }
@@ -373,6 +377,11 @@ final class ModelerApi extends ControllerBase {
           $data = ['error' => (string) $result];
         }
         else {
+          // The replay data is intentionally passed through to the response
+          // unmodified. It may contain deduplication/reference markers (e.g.
+          // "@ref"/"@prev") that the modeler frontend expands lazily at
+          // display time, so the Modeler API must not expand or transform it
+          // here.
           $data = $result;
         }
       }

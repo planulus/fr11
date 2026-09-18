@@ -56,7 +56,7 @@ class FormFieldSetValue extends ConfigurableActionBase {
     $result = parent::access($object, $account, TRUE);
     if ($result->isAllowed() && $this->configuration['use_yaml'] && $this->configuration['validate_yaml']) {
       try {
-        $this->yamlParser->parse($this->configuration['value']);
+        $this->yamlParser->parse($this->configuration['field_value']);
       }
       catch (ParseException) {
         $result = AccessResult::forbidden('YAML data is not valid.');
@@ -163,7 +163,40 @@ class FormFieldSetValue extends ConfigurableActionBase {
       NestedArray::setValue($values, $this->getFieldNameAsArray(), $value, TRUE);
     }
 
+    // Also write the value into the user input: when an Ajax handler limits
+    // validation to this very field, the rebuilt form re-reads the (stale)
+    // user input and would otherwise keep the field empty.
+    $this->setUserInputValue($value);
+
     // Restoring the original config entry.
+    $this->configuration['field_name'] = $original_field_name;
+  }
+
+  /**
+   * Writes the given value into the form state's user input.
+   *
+   * The main write block only updates the location returned by
+   * getSubmittedValue(), which prefers the form state values over the user
+   * input. When an Ajax handler sets "validate_fields" to the same field this
+   * action writes to, the form state values keep that field while the user
+   * input stays stale. The rebuilt Ajax form re-reads the user input, so the
+   * field would remain empty. Writing the value into the user input as well
+   * makes the rebuilt form pick it up.
+   *
+   * @param mixed $value
+   *   The value to write into the user input.
+   */
+  private function setUserInputValue(mixed $value): void {
+    if (!($form_state = $this->getCurrentFormState())) {
+      return;
+    }
+    $user_input = &$form_state->getUserInput();
+    if (!$user_input) {
+      return;
+    }
+    $original_field_name = $this->configuration['field_name'];
+    $this->configuration['field_name'] = $this->normalizeFieldName((string) $this->configuration['field_name']);
+    NestedArray::setValue($user_input, $this->getFieldNameAsArray(), $value, TRUE);
     $this->configuration['field_name'] = $original_field_name;
   }
 

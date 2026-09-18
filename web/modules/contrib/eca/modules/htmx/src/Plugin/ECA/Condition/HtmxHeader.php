@@ -32,24 +32,34 @@ class HtmxHeader extends StringComparisonBase {
   protected const string VALUE_TARGET = 'target';
 
   /**
-   * The HTMX request value to compare: the trigger element id.
+   * The HTMX request value to compare: the triggering element identifier.
+   *
+   * The format is core-version specific: an element id on Drupal 11, a CSS
+   * selector on Drupal 12 and later.
+   *
+   * @see \Drupal\eca_htmx\HtmxRequestInfo::trigger()
    */
   protected const string VALUE_TRIGGER = 'trigger';
 
   /**
-   * The HTMX request value to compare: the trigger element name.
+   * The HTMX request value to compare: the trigger element name attribute.
    */
   protected const string VALUE_TRIGGER_NAME = 'trigger_name';
+
+  /**
+   * The HTMX request value to compare: the triggering element CSS selector.
+   */
+  protected const string VALUE_SOURCE = 'source';
+
+  /**
+   * The HTMX request value to compare: full or partial page request.
+   */
+  protected const string VALUE_REQUEST_TYPE = 'request_type';
 
   /**
    * The HTMX request value to compare: the current URL.
    */
   protected const string VALUE_CURRENT_URL = 'current_url';
-
-  /**
-   * The HTMX request value to compare: the prompt response.
-   */
-  protected const string VALUE_PROMPT = 'prompt';
 
   /**
    * The HTMX request value to compare: whether this is an HTMX request.
@@ -93,8 +103,9 @@ class HtmxHeader extends StringComparisonBase {
     return match ($value) {
       self::VALUE_TRIGGER => $this->htmxRequestInfo->trigger(),
       self::VALUE_TRIGGER_NAME => $this->htmxRequestInfo->triggerName(),
+      self::VALUE_SOURCE => $this->htmxRequestInfo->source(),
+      self::VALUE_REQUEST_TYPE => $this->htmxRequestInfo->requestType(),
       self::VALUE_CURRENT_URL => $this->htmxRequestInfo->currentUrl(),
-      self::VALUE_PROMPT => $this->htmxRequestInfo->prompt(),
       self::VALUE_IS_REQUEST => $this->htmxRequestInfo->isRequest() ? '1' : '0',
       self::VALUE_BOOSTED => $this->htmxRequestInfo->isBoosted() ? '1' : '0',
       self::VALUE_HISTORY_RESTORE => $this->htmxRequestInfo->isHistoryRestore() ? '1' : '0',
@@ -128,14 +139,15 @@ class HtmxHeader extends StringComparisonBase {
       '#title' => $this->t('HTMX request value'),
       '#description' => $this->t('The value from the current HTMX request that should be compared. The boolean values evaluate to "1" or "0".'),
       '#options' => [
-        self::VALUE_TARGET => $this->t('Target (HX-Target)'),
-        self::VALUE_TRIGGER => $this->t('Trigger id (HX-Trigger)'),
-        self::VALUE_TRIGGER_NAME => $this->t('Trigger name (HX-Trigger-Name)'),
-        self::VALUE_CURRENT_URL => $this->t('Current URL (HX-Current-URL)'),
-        self::VALUE_PROMPT => $this->t('Prompt response (HX-Prompt)'),
-        self::VALUE_IS_REQUEST => $this->t('Is HTMX request (HX-Request)'),
-        self::VALUE_BOOSTED => $this->t('Is boosted (HX-Boosted)'),
-        self::VALUE_HISTORY_RESTORE => $this->t('Is history restore (HX-History-Restore-Request)'),
+        self::VALUE_TARGET => $this->t('Target: the element the response is aimed at'),
+        self::VALUE_TRIGGER => $this->t('Trigger: the triggering element identifier (element id on Drupal 11, CSS selector on Drupal 12 and later)'),
+        self::VALUE_TRIGGER_NAME => $this->t('Trigger name: the name attribute of the triggering element (same on all Drupal versions)'),
+        self::VALUE_SOURCE => $this->t('Trigger source: the CSS selector of the triggering element (Drupal 12 and later only)'),
+        self::VALUE_REQUEST_TYPE => $this->t('Request type: "full" or "partial" (Drupal 12 and later only)'),
+        self::VALUE_CURRENT_URL => $this->t('Current URL: the page the request was sent from'),
+        self::VALUE_IS_REQUEST => $this->t('Is HTMX request'),
+        self::VALUE_BOOSTED => $this->t('Is boosted'),
+        self::VALUE_HISTORY_RESTORE => $this->t('Is history restore'),
       ],
       '#default_value' => $this->configuration['value'],
       '#weight' => -100,

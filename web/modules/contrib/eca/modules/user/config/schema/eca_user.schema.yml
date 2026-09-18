@@ -41,7 +41,7 @@ eca.condition.plugin.eca_current_user_role:
       type: string
       label: 'User role'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca_user\Plugin\ECA\Condition\CurrentUserRole::getAllValidUserRoles'
 
 eca.condition.plugin.eca_current_user_id:
@@ -63,7 +63,7 @@ eca.condition.plugin.eca_user_role:
       type: string
       label: 'User role'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca_user\Plugin\ECA\Condition\CurrentUserRole::getAllValidUserRoles'
 
 eca.condition.plugin.eca_current_user_permission:
@@ -74,7 +74,7 @@ eca.condition.plugin.eca_current_user_permission:
       type: string
       label: 'Permission'
       constraints:
-        Choice:
+        EcaChoice:
           callback: [\Drupal\user\Entity\Role, getAllValidPermissions]
 
 eca.condition.plugin.eca_user_permission:
@@ -88,7 +88,7 @@ eca.condition.plugin.eca_user_permission:
       type: string
       label: 'Permission'
       constraints:
-        Choice:
+        EcaChoice:
           callback: [\Drupal\user\Entity\Role, getAllValidPermissions]
 
 action.configuration.eca_token_load_user_current:
@@ -96,7 +96,7 @@ action.configuration.eca_token_load_user_current:
   label: 'Configuration for the "Token Load User Current" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
 
 action.configuration.eca_new_user:
@@ -104,7 +104,7 @@ action.configuration.eca_new_user:
   label: 'Configuration for the "New User" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     name:
       type: string
@@ -128,7 +128,7 @@ action.configuration.eca_get_preferred_langcode:
   label: 'Configuration for the "Get Preferred Langcode" action'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
 
 action.configuration.eca_switch_account:

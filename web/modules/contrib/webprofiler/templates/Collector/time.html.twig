@@ -22,5 +22,9 @@
     </div>
   {% endset %}
 
-  {{ include('@webprofiler/Profiler/toolbar_item.html.twig', { link: false, status: status_color }) }}
+  {{ include('@webprofiler/Profiler/toolbar_item.html.twig', { link: profiler_url, status: status_color }) }}
+{% endblock %}
+
+{% block panel %}
+  {{ collector.panel() }}
 {% endblock %}

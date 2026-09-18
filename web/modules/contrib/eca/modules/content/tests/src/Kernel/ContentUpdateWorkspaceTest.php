@@ -9,12 +9,14 @@ use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\node\Traits\ContentTypeCreationTrait;
 use Drupal\user\Entity\User;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Kernel tests for revisionable node types with workspace.
  */
 #[Group('eca')]
 #[Group('eca_content')]
+#[RunTestsInSeparateProcesses]
 class ContentUpdateWorkspaceTest extends KernelTestBase {
 
   use ContentTypeCreationTrait;
@@ -118,9 +120,9 @@ class ContentUpdateWorkspaceTest extends KernelTestBase {
    * @see \Drupal\eca_content\Hook\ContentHooks::entityUpdate()
    */
   protected function assertNodeTrackedInStage(Node $node, bool $expected): void {
-    /** @var \Drupal\workspaces\WorkspaceAssociationInterface $association */
-    $association = $this->container->get('workspaces.association');
-    $workspace_ids = $association->getEntityTrackingWorkspaceIds($node);
+    /** @var \Drupal\workspaces\WorkspaceTrackerInterface $tracker */
+    $tracker = $this->container->get('workspaces.tracker');
+    $workspace_ids = $tracker->getEntityTrackingWorkspaceIds($node);
     if ($expected) {
       $this->assertContains('stage', $workspace_ids, 'The node is tracked in the stage workspace.');
     }

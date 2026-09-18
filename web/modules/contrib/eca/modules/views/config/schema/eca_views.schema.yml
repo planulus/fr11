@@ -58,13 +58,13 @@ action.configuration.eca_views_query:
   label: 'Configuration for the "Views Query" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     view_id:
       type: string
       label: 'View'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca_views\Plugin\Action\ViewsQuery::getAllValidViews'
         NotBlank: []
     display_id:
@@ -88,13 +88,13 @@ action.configuration.eca_views_export:
       type: boolean
       label: 'Store results also in a token?'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     view_id:
       type: string
       label: 'View'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca_views\Plugin\Action\ViewsQuery::getAllValidViews'
         NotBlank: []
     display_id:
@@ -133,3 +133,15 @@ action.configuration.eca_views_set_filter_value:
     validate_yaml:
       type: boolean
       label: 'Validate YAML to prevent this from being executed when invalid'
+
+# The "eca" views access plugin stores no options. The binding between a view
+# and the ECA model that decides access lives on the ECA side, where the
+# "eca_views:access" event carries "view_id" and "display_id". The mapping is
+# therefore empty by design, and "FullyValidatable" keeps it that way: adding
+# an option to the plugin without updating this entry fails validation.
+views.access.eca:
+  type: mapping
+  label: 'ECA'
+  mapping: {}
+  constraints:
+    FullyValidatable: ~

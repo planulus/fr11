@@ -50,4 +50,58 @@ class DropbuttonTest extends RenderActionsTestBase {
     $this->assertSame('Config', $build[0]['#links'][1]['title']);
   }
 
+  /**
+   * Tests YAML validation in the "eca_render_dropbutton" access check.
+   *
+   * The access check must evaluate the "links" configuration key, which is the
+   * key this plugin actually stores. Reading a non-existent "value" key passes
+   * NULL into the string-typed YamlParser::parse() and throws a TypeError
+   * instead of returning an access result.
+   *
+   * @see https://git.drupalcode.org/project/eca/-/work_items/3590420
+   */
+  public function testDropbuttonYamlValidation(): void {
+    $links = <<<YAML
+-
+  title: Structure
+  url: "/admin/structure"
+YAML;
+    /** @var \Drupal\eca_render\Plugin\Action\Dropbutton $valid */
+    $valid = $this->actionManager->createInstance('eca_render_dropbutton', [
+      'dropbutton_type' => 'small',
+      'links' => $links,
+      'use_yaml' => TRUE,
+      'validate_yaml' => TRUE,
+      'name' => '',
+      'token_name' => '',
+      'weight' => '100',
+      'mode' => 'append',
+    ]);
+    /** @var \Drupal\eca_render\Plugin\Action\Dropbutton $invalid */
+    $invalid = $this->actionManager->createInstance('eca_render_dropbutton', [
+      'dropbutton_type' => 'small',
+      'links' => 'title: "unclosed',
+      'use_yaml' => TRUE,
+      'validate_yaml' => TRUE,
+      'name' => '',
+      'token_name' => '',
+      'weight' => '100',
+      'mode' => 'append',
+    ]);
+
+    $valid_access = NULL;
+    $invalid_access = NULL;
+    $this->eventDispatcher->addListener(RenderBasicsEvents::BASIC, function (BasicRenderEvent $event) use ($valid, $invalid, &$valid_access, &$invalid_access) {
+      $valid->setEvent($event);
+      $invalid->setEvent($event);
+      $valid_access = $valid->access(NULL);
+      $invalid_access = $invalid->access(NULL);
+    });
+
+    $this->dispatchBasicRenderEvent([]);
+
+    $this->assertTrue($valid_access, 'Valid YAML is allowed.');
+    $this->assertFalse($invalid_access, 'Malformed YAML is forbidden.');
+  }
+
 }

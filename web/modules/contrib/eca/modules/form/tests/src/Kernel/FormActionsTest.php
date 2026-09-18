@@ -1260,6 +1260,72 @@ YAML;
   }
 
   /**
+   * Tests that "eca_form_field_set_value" also writes the user input.
+   *
+   * When an Ajax handler limits validation to the very field the action writes
+   * to, the form state keeps that field in its values while the user input
+   * stays stale. The action must therefore also write the value into the user
+   * input so that a rebuilt Ajax form re-reads the updated value.
+   */
+  public function testFormFieldSetValueWritesUserInput(): void {
+    // Create a long text field for the article bundle and show it on the form.
+    FieldStorageConfig::create([
+      'field_name' => 'field_string_long',
+      'type' => 'string_long',
+      'entity_type' => 'node',
+      'cardinality' => 1,
+    ])->save();
+    FieldConfig::create([
+      'field_name' => 'field_string_long',
+      'label' => 'A long string field.',
+      'entity_type' => 'node',
+      'bundle' => 'article',
+    ])->save();
+    $form_display = EntityFormDisplay::load('node.article.default');
+    $form_display->setComponent('field_string_long', ['type' => 'string_textarea']);
+    $form_display->save();
+
+    /** @var \Drupal\eca_form\Plugin\Action\FormFieldSetValue $action */
+    $action = $this->actionManager->createInstance('eca_form_field_set_value', [
+      'field_name' => 'field_string_long.0.value',
+      'field_value' => 'Automatically set value',
+      'use_yaml' => FALSE,
+    ]);
+
+    /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher */
+    $event_dispatcher = \Drupal::service('event_dispatcher');
+    $form_builder = \Drupal::formBuilder();
+
+    $access_result = NULL;
+    $event_dispatcher->addListener(FormEvents::SUBMIT, function (FormSubmit $event) use (&$access_result, $action) {
+      $action->setEvent($event);
+      $access_result = $access_result ?? $action->access(NULL);
+      if ($action->access(NULL)) {
+        $action->execute();
+      }
+    });
+
+    $form_object = \Drupal::entityTypeManager()->getFormObject('node', 'default');
+    $form_object->setEntity(Node::create([
+      'type' => 'article',
+      'title' => 'Original title',
+    ]));
+    $form_state = new FormState();
+    $form_builder->buildForm($form_object, $form_state);
+    $form_state->setValues([
+      'field_string_long' => [['value' => 'Initial value']],
+    ] + $form_state->getValues());
+    $form_state->setUserInput([
+      'field_string_long' => [['value' => 'Initial value']],
+    ] + $form_state->getUserInput());
+    $form_builder->submitForm($form_object, $form_state);
+
+    $this->assertTrue($access_result);
+    $this->assertEquals('Automatically set value', $form_state->getUserInput()['field_string_long'][0]['value']);
+    $this->assertEquals('Automatically set value', $form_state->getValues()['field_string_long'][0]['value']);
+  }
+
+  /**
    * Tests the action plugin "eca_form_get_errors".
    */
   public function testFormGetErrors(): void {
@@ -1412,6 +1478,172 @@ YAML;
     $this->assertInstanceOf(Url::class, $redirect);
     /** @var \Drupal\Core\Url $redirect */
     $this->assertSame("/admin/structure", $redirect->toString());
+  }
+
+  /**
+   * Tests YAML validation in "eca_form_field_set_value" access check.
+   *
+   * The access check must evaluate the "field_value" configuration key, which
+   * is the key this plugin actually stores. Reading a non-existent "value" key
+   * passes NULL into the string-typed YamlParser::parse() and throws a
+   * TypeError instead of returning an access result.
+   *
+   * @see https://git.drupalcode.org/project/eca/-/work_items/3590420
+   */
+  public function testFormFieldSetValueYamlValidation(): void {
+    /** @var \Drupal\eca_form\Plugin\Action\FormFieldSetValue $valid */
+    $valid = $this->actionManager->createInstance('eca_form_field_set_value', [
+      'field_name' => 'custom_value',
+      'field_value' => 'mykey: "My value"',
+      'use_yaml' => TRUE,
+      'validate_yaml' => TRUE,
+    ]);
+    /** @var \Drupal\eca_form\Plugin\Action\FormFieldSetValue $invalid */
+    $invalid = $this->actionManager->createInstance('eca_form_field_set_value', [
+      'field_name' => 'custom_value',
+      'field_value' => 'mykey: "unclosed',
+      'use_yaml' => TRUE,
+      'validate_yaml' => TRUE,
+    ]);
+
+    /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher */
+    $event_dispatcher = \Drupal::service('event_dispatcher');
+    $form_builder = \Drupal::formBuilder();
+
+    $valid_access = NULL;
+    $invalid_access = NULL;
+    $event_dispatcher->addListener(FormEvents::VALIDATE, function (FormValidate $event) use ($valid, $invalid, &$valid_access, &$invalid_access) {
+      $valid->setEvent($event);
+      $invalid->setEvent($event);
+      $valid_access = $valid_access ?? $valid->access(NULL);
+      $invalid_access = $invalid_access ?? $invalid->access(NULL);
+    });
+
+    $form_object = \Drupal::entityTypeManager()->getFormObject('node', 'default');
+    $form_object->setEntity(Node::create([
+      'type' => 'article',
+      'title' => 'Original title',
+    ]));
+    $form_state = new FormState();
+    $form_builder->buildForm($form_object, $form_state);
+    $form_builder->submitForm($form_object, $form_state);
+
+    $this->assertTrue($valid_access, 'Valid YAML is allowed.');
+    $this->assertFalse($invalid_access, 'Malformed YAML is forbidden.');
+  }
+
+  /**
+   * Tests YAML validation in "eca_form_state_set_property_value" access check.
+   *
+   * The access check must evaluate the "property_value" configuration key,
+   * which is the key this plugin actually stores. Reading a non-existent
+   * "value" key passes NULL into the string-typed YamlParser::parse() and
+   * throws a TypeError instead of returning an access result.
+   *
+   * @see https://git.drupalcode.org/project/eca/-/work_items/3590420
+   */
+  public function testFormStateSetPropertyValueYamlValidation(): void {
+    /** @var \Drupal\eca_form\Plugin\Action\FormStateSetPropertyValue $valid */
+    $valid = $this->actionManager->createInstance('eca_form_state_set_property_value', [
+      'property_name' => 'someprop',
+      'property_value' => 'mykey: "My value"',
+      'use_yaml' => TRUE,
+      'validate_yaml' => TRUE,
+    ]);
+    /** @var \Drupal\eca_form\Plugin\Action\FormStateSetPropertyValue $invalid */
+    $invalid = $this->actionManager->createInstance('eca_form_state_set_property_value', [
+      'property_name' => 'someprop',
+      'property_value' => 'mykey: "unclosed',
+      'use_yaml' => TRUE,
+      'validate_yaml' => TRUE,
+    ]);
+
+    /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher */
+    $event_dispatcher = \Drupal::service('event_dispatcher');
+    $form_builder = \Drupal::formBuilder();
+
+    $valid_access = NULL;
+    $invalid_access = NULL;
+    $event_dispatcher->addListener(FormEvents::BUILD, function (FormBuild $event) use ($valid, $invalid, &$valid_access, &$invalid_access) {
+      $valid->setEvent($event);
+      $invalid->setEvent($event);
+      $valid_access = $valid_access ?? $valid->access(NULL);
+      $invalid_access = $invalid_access ?? $invalid->access(NULL);
+    });
+
+    $form_object = \Drupal::entityTypeManager()->getFormObject('node', 'default');
+    $form_object->setEntity(Node::create([
+      'type' => 'article',
+      'title' => $this->randomMachineName(),
+    ]));
+    $form_state = new FormState();
+    $form_builder->buildForm($form_object, $form_state);
+
+    $this->assertTrue($valid_access, 'Valid YAML is allowed.');
+    $this->assertFalse($invalid_access, 'Malformed YAML is forbidden.');
+  }
+
+  /**
+   * Tests YAML validation in "eca_form_add_optionsfield" access check.
+   *
+   * This plugin inherits access() from FormFieldSetOptionsTrait, which must
+   * evaluate the "options" configuration key, the key the trait actually
+   * stores. Reading a non-existent "value" key passes NULL into the
+   * string-typed YamlParser::parse() and throws a TypeError instead of
+   * returning an access result.
+   *
+   * The sibling FormFieldSetOptions overrides access() and therefore never
+   * reaches the trait implementation.
+   *
+   * @see https://git.drupalcode.org/project/eca/-/work_items/3590420
+   */
+  public function testFormAddOptionsFieldYamlValidation(): void {
+    $options = <<<YAML
+key1: Value One
+key2: Value Two
+YAML;
+    /** @var \Drupal\eca_form\Plugin\Action\FormAddOptionsField $valid */
+    $valid = $this->actionManager->createInstance('eca_form_add_optionsfield', [
+      'name' => 'myoptions',
+      'type' => 'select',
+      'multiple' => FALSE,
+      'options' => $options,
+      'use_yaml' => TRUE,
+      'validate_yaml' => TRUE,
+    ]);
+    /** @var \Drupal\eca_form\Plugin\Action\FormAddOptionsField $invalid */
+    $invalid = $this->actionManager->createInstance('eca_form_add_optionsfield', [
+      'name' => 'myoptions',
+      'type' => 'select',
+      'multiple' => FALSE,
+      'options' => 'key1: "unclosed',
+      'use_yaml' => TRUE,
+      'validate_yaml' => TRUE,
+    ]);
+
+    /** @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher */
+    $event_dispatcher = \Drupal::service('event_dispatcher');
+    $form_builder = \Drupal::formBuilder();
+
+    $valid_access = NULL;
+    $invalid_access = NULL;
+    $event_dispatcher->addListener(FormEvents::PROCESS, function (FormProcess $event) use ($valid, $invalid, &$valid_access, &$invalid_access) {
+      $valid->setEvent($event);
+      $invalid->setEvent($event);
+      $valid_access = $valid_access ?? $valid->access(NULL);
+      $invalid_access = $invalid_access ?? $invalid->access(NULL);
+    });
+
+    $form_object = \Drupal::entityTypeManager()->getFormObject('node', 'default');
+    $form_object->setEntity(Node::create([
+      'type' => 'article',
+      'title' => $this->randomMachineName(),
+    ]));
+    $form_state = new FormState();
+    $form_builder->buildForm($form_object, $form_state);
+
+    $this->assertTrue($valid_access, 'Valid YAML is allowed.');
+    $this->assertFalse($invalid_access, 'Malformed YAML is forbidden.');
   }
 
 }

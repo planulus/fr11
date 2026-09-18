@@ -19,12 +19,12 @@ eca.event.plugin.eca_base:eca_token_generate:
   label: 'ECA Token Generate'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
 
 eca.condition.plugin.eca_state:
   type: eca.condition.plugin
-  label: 'State condition'
+  label: 'ECA state condition'
   mapping:
     key:
       type: string
@@ -36,13 +36,13 @@ eca.condition.plugin.eca_state:
       type: string
       label: 'Comparison operator'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidOperators'
     type:
       type: string
       label: 'Comparison type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidTypes'
     case:
       type: boolean
@@ -62,13 +62,13 @@ eca.condition.plugin.eca_count:
       type: string
       label: 'Comparison operator'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidOperators'
     type:
       type: string
       label: 'Comparison type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidTypes'
     case:
       type: boolean
@@ -86,9 +86,10 @@ eca.condition.plugin.eca_list_contains:
       label: 'Method'
       constraints:
         NotBlank: []
-        Choice:
-          - index
-          - value
+        EcaChoice:
+          choices:
+            - index
+            - value
     value:
       type: text
       label: 'Value to lookup'
@@ -98,7 +99,7 @@ eca.condition.plugin.eca_token_exists:
   label: 'Token exists condition'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
 
 eca.condition.plugin.eca_scalar:
@@ -115,13 +116,13 @@ eca.condition.plugin.eca_scalar:
       type: string
       label: 'Comparison operator'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidOperators'
     type:
       type: string
       label: 'Comparison type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidTypes'
     case:
       type: boolean
@@ -175,7 +176,7 @@ action.configuration.eca_keyvalueexpirablestore_read:
       type: string
       label: 'Store key'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
 
 action.configuration.eca_keyvalueexpirablestore_write:
@@ -226,7 +227,7 @@ action.configuration.eca_keyvaluestore_read:
       type: string
       label: 'Store key'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
 
 action.configuration.eca_keyvaluestore_write:
@@ -264,10 +265,11 @@ action.configuration.eca_list_add:
       label: 'Method'
       constraints:
         NotBlank: []
-        Choice:
-          - append
-          - prepend
-          - set
+        EcaChoice:
+          choices:
+            - append
+            - prepend
+            - set
     index:
       type: string
       label: 'Index key'
@@ -293,10 +295,8 @@ action.configuration.eca_list_compare:
           - array_diff
           - array_intersect
     result_token_name:
-      type: label
+      type: eca.token_name.required
       label: 'Name of result token'
-      constraints:
-        NotBlank: []
     list_token:
       type: string
       label: 'Token containing the primary list'
@@ -308,7 +308,7 @@ action.configuration.eca_count:
   label: 'Configuration for the "Count" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     list_token:
       type: string
@@ -344,18 +344,19 @@ action.configuration.eca_list_remove:
       type: text
       label: 'Value to remove'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     method:
       type: string
       label: 'Method'
       constraints:
         NotBlank: []
-        Choice:
-          - first
-          - last
-          - index
-          - value
+        EcaChoice:
+          choices:
+            - first
+            - last
+            - index
+            - value
     index:
       type: string
       label: 'Index key'
@@ -388,7 +389,7 @@ action.configuration.eca_list_sort:
           - natsort
           - natcasesort
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     list_token:
       type: string
@@ -412,23 +413,23 @@ action.configuration.eca_lock_acquire:
       type: boolean
       label: 'Wait for lock until timeout exceeded'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
 
 action.configuration.eca_state_read:
   type: mapping
-  label: 'Configuration for the "State Read" action'
+  label: 'Configuration for the "ECA state: read" action'
   mapping:
     key:
       type: string
       label: 'State key'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
 
 action.configuration.eca_state_write:
   type: mapping
-  label: 'Configuration for the "State Write" action'
+  label: 'Configuration for the "ECA state: write" action'
   mapping:
     key:
       type: string
@@ -465,7 +466,7 @@ action.configuration.eca_privatetempstore_read:
       type: string
       label: 'Store key'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
 
 action.configuration.eca_privatetempstore_write:
@@ -497,7 +498,8 @@ action.configuration.eca_set_eca_log_level:
       label: 'Log level'
       constraints:
         # @see \Drupal\Core\Logger::getLevels()
-        Choice: [0, 1, 2, 3, 4, 5, 6, 7]
+        EcaChoice:
+          choices: [0, 1, 2, 3, 4, 5, 6, 7]
 
 action.configuration.eca_sharedtempstore_delete:
   type: mapping
@@ -521,7 +523,7 @@ action.configuration.eca_sharedtempstore_read:
       type: string
       label: 'Store key'
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
 
 action.configuration.eca_sharedtempstore_write:
@@ -549,7 +551,7 @@ action.configuration.eca_token_replace:
   label: 'Configuration for the "Token Replace" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     token_value:
       type: text
@@ -561,32 +563,38 @@ action.configuration.eca_token_replace:
       type: boolean
       label: 'Validate YAML to prevent this from being executed when invalid'
 
+action.configuration.eca_token_set_context:
+  type: mapping
+  label: 'Configuration for the "Token Set Context" action'
+  mapping: {}
+
 action.configuration.eca_token_set_random_value:
   type: mapping
   label: 'Configuration for the "Token Set Random Value" action'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
     mode:
       type: string
       label: 'Mode'
       constraints:
         NotBlank: []
-        Choice:
-          - image
-          - integer
-          - machine_name unique
-          - machine_name
-          - name unique
-          - name
-          - paragraphs
-          - password
-          - sentences capitalize
-          - sentences
-          - string unique
-          - string
-          - word
+        EcaChoice:
+          choices:
+            - image
+            - integer
+            - machine_name unique
+            - machine_name
+            - name unique
+            - name
+            - paragraphs
+            - password
+            - sentences capitalize
+            - sentences
+            - string unique
+            - string
+            - word
     length:
       type: string
       label: 'Length or min/max'
@@ -598,7 +606,7 @@ action.configuration.eca_token_set_value:
   label: 'Configuration for the "Token Set Value" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     token_value:
       type: text
@@ -615,7 +623,7 @@ action.configuration.eca_translate:
   label: 'Configuration for the "Translate" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     value:
       type: text
@@ -631,7 +639,8 @@ action.configuration.eca_translate:
       label: 'Target language'
       constraints:
         NotBlank: []
-        Choice: []
+        EcaChoice:
+          callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidLangcodesAndPreferred'
 
 action.configuration.eca_trigger_custom_event:
   type: mapping
@@ -641,7 +650,7 @@ action.configuration.eca_trigger_custom_event:
       type: string
       label: 'Event ID'
     tokens:
-      type: text
+      type: eca.token_list
       label: 'Tokens to forward'
 
 action.configuration.eca_void_and_condition:

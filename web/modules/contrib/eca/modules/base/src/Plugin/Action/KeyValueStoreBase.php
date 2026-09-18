@@ -229,6 +229,7 @@ abstract class KeyValueStoreBase extends ConfigurableActionBase {
       '#default_value' => $this->configuration['collection'],
       '#weight' => -90,
       '#description' => $this->t('The collection of the store.'),
+      '#eca_token_replacement' => TRUE,
     ];
     $form['key'] = [
       '#type' => 'textfield',
@@ -236,6 +237,7 @@ abstract class KeyValueStoreBase extends ConfigurableActionBase {
       '#default_value' => $this->configuration['key'],
       '#weight' => -80,
       '#description' => $this->t('The key of the value in the store.'),
+      '#eca_token_replacement' => TRUE,
     ];
     if ($this->writeMode()) {
       $form['value'] = [

@@ -91,6 +91,7 @@ class LogMessage extends ConfigurableActionBase {
       '#default_value' => $this->configuration['channel'],
       '#description' => $this->t('The name of the logger type, the message should be logged to.'),
       '#weight' => -30,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['severity'] = [
       '#type' => 'select',

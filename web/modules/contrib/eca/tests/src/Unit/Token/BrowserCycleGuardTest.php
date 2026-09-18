@@ -95,12 +95,12 @@ class BrowserCycleGuardTest extends TestCase {
    *   The self-referencing entity mock.
    */
   private function createSelfReferencingEntity(string $entityTypeId, string $id): ContentEntityInterface {
-    $entity = $this->createMock(ContentEntityInterface::class);
+    $entity = $this->createStub(ContentEntityInterface::class);
     $entity->method('getEntityTypeId')->willReturn($entityTypeId);
     $entity->method('id')->willReturn($id);
     $entity->method('isNew')->willReturn(FALSE);
 
-    $itemList = $this->createMock(EntityReferenceFieldItemListInterface::class);
+    $itemList = $this->createStub(EntityReferenceFieldItemListInterface::class);
     // The reference points back to the very same entity -> cycle.
     $itemList->method('referencedEntities')->willReturn([$entity]);
 
@@ -247,6 +247,16 @@ class BrowserCycleGuardTest extends TestCase {
    *
    * Uses distinct entity ids on every hop so the cycle guard never fires;
    * the depth limit must still bound the tree.
+   *
+   * The expected bound is $depth + 1 levels, not $depth. ::maxDepth() counts
+   * the top-level node produced by ::normalizeValue() as level 1, and the
+   * $depth budget is spent by ::normalizeRecursive() below that, so a budget
+   * of N yields N + 1 levels. Before issue #3590450 this method asserted a
+   * bound of $depth and passed, but not for its stated reason: the cycle
+   * guard resolved every hop against the root entity, so it did fire on this
+   * fixture and cut the chain one hop short - the very thing the fixture is
+   * built to avoid. With the guard resolving against the current entity the
+   * chain now runs to the depth budget, which is what this method is for.
    */
   public function testDistinctReferenceChainBoundedByDepth(): void {
     // Each access to the reference returns a brand-new entity with a unique
@@ -255,7 +265,7 @@ class BrowserCycleGuardTest extends TestCase {
     // cycle guard never fires and only the depth cap can bound the tree.
     $entities = [];
     for ($i = 1; $i <= 10; $i++) {
-      $entity = $this->createMock(ContentEntityInterface::class);
+      $entity = $this->createStub(ContentEntityInterface::class);
       $entity->method('getEntityTypeId')->willReturn('contact');
       $entity->method('id')->willReturn((string) $i);
       $entity->method('isNew')->willReturn(FALSE);
@@ -265,7 +275,7 @@ class BrowserCycleGuardTest extends TestCase {
     }
     foreach ($entities as $i => $entity) {
       $next = $entities[$i + 1] ?? $entities[10];
-      $itemList = $this->createMock(EntityReferenceFieldItemListInterface::class);
+      $itemList = $this->createStub(EntityReferenceFieldItemListInterface::class);
       $itemList->method('referencedEntities')->willReturn([$next]);
       $entity->method('get')->willReturnCallback(
         static function (string $name) use ($itemList) {
@@ -301,9 +311,18 @@ class BrowserCycleGuardTest extends TestCase {
 
     $maxDepth = $this->maxDepth($result);
     $this->assertLessThanOrEqual(
-      $depth,
+      $depth + 1,
       $maxDepth,
       sprintf('Normalized tree depth %d exceeds the configured cap of %d.', $maxDepth, $depth),
+    );
+
+    // The chain must actually reach that bound: if it stopped earlier, the
+    // cycle guard fired on a set of deliberately distinct entities and this
+    // method would no longer be testing the depth cap at all.
+    $this->assertSame(
+      $depth + 1,
+      $maxDepth,
+      sprintf('Normalized tree depth %d falls short of the configured cap of %d.', $maxDepth, $depth),
     );
   }
 

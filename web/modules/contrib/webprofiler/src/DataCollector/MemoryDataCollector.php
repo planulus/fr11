@@ -11,9 +11,9 @@ use Symfony\Component\HttpKernel\DataCollector\LateDataCollectorInterface;
 /**
  * Collects memory data.
  */
-class MemoryDataCollector extends DataCollector implements LateDataCollectorInterface {
+class MemoryDataCollector extends DataCollector implements HasPanelInterface, LateDataCollectorInterface {
 
-  use DataCollectorTrait;
+  use DataCollectorTrait, PanelTrait;
 
   /**
    * MemoryDataCollector constructor.
@@ -78,6 +78,42 @@ class MemoryDataCollector extends DataCollector implements LateDataCollectorInte
    */
   public function getName(): string {
     return 'memory';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getPanel(): array {
+    $memoryLimit = $this->getMemoryLimit();
+    $memoryLimitText = $memoryLimit == -1 ? $this->t('Unlimited') : \sprintf('%.0f MiB', $memoryLimit / 1024 / 1024);
+
+    $rows = [
+      [
+        $this->t('Peak memory usage'),
+        \sprintf('%.1f MiB', $this->getMemory() / 1024 / 1024),
+      ],
+      [
+        $this->t('PHP memory limit'),
+        $memoryLimitText,
+      ],
+    ];
+
+    return [
+      '#theme' => 'webprofiler_dashboard_section',
+      '#data' => [
+        '#type' => 'table',
+        '#header' => [
+          $this->t('Metric'),
+          $this->t('Value'),
+        ],
+        '#rows' => $rows,
+        '#attributes' => [
+          'class' => [
+            'webprofiler__table',
+          ],
+        ],
+      ],
+    ];
   }
 
 }

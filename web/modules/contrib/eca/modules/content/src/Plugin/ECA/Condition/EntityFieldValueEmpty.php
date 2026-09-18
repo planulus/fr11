@@ -107,6 +107,7 @@ class EntityFieldValueEmpty extends ConditionBase {
       '#description' => $this->t('The field name of the entity to check, if its value is empty.'),
       '#default_value' => $this->configuration['field_name'],
       '#weight' => -10,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

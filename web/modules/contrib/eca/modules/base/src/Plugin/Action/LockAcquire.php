@@ -72,6 +72,7 @@ class LockAcquire extends ConfigurableActionBase implements CleanupInterface {
       '#default_value' => $this->configuration['lock_timeout'],
       '#required' => TRUE,
       '#weight' => -40,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['lock_wait'] = [
       '#type' => 'checkbox',

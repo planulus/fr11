@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\webprofiler\Cache;
 
+use Drupal\Component\Utility\DeprecationHelper;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
@@ -138,7 +139,7 @@ class CacheBackendWrapper implements CacheBackendInterface, CacheTagsInvalidator
    * {@inheritdoc}
    */
   public function invalidateAll() {
-    $this->cacheBackend->invalidateAll();
+    DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $this->cacheBackend->deleteAll(), fn() => $this->cacheBackend->invalidateAll());
   }
 
   /**

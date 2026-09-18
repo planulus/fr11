@@ -316,7 +316,7 @@ class NodeAccessExecutionChainTest extends KernelTestBase {
    *
    * A grants model with no operation restriction captures the requested
    * operation by writing the [event:operation] token into the Drupal state
-   * (via the eca_base "Persistent state: write" action). When Drupal asks for
+   * (via the eca_base "ECA state: write" action). When Drupal asks for
    * grants for a specific operation, the stored state must equal exactly that
    * operation, proving the token is exposed on the NodeGrants event and carries
    * the operation Drupal requested.

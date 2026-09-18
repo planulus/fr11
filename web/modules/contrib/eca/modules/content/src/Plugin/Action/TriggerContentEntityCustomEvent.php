@@ -102,6 +102,7 @@ class TriggerContentEntityCustomEvent extends ConfigurableActionBase {
       '#default_value' => $this->configuration['event_id'],
       '#description' => $this->t('The ID of the event. Leave empty to trigger all custom events.'),
       '#weight' => -20,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['tokens'] = [
       '#type' => 'textarea',

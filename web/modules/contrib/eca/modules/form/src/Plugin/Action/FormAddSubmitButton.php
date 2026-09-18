@@ -94,6 +94,7 @@ class FormAddSubmitButton extends FormActionBase {
       '#weight' => -10,
       '#default_value' => $this->configuration['name'],
       '#required' => TRUE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['value'] = [
       '#type' => 'textfield',
@@ -102,6 +103,7 @@ class FormAddSubmitButton extends FormActionBase {
       '#weight' => -9,
       '#default_value' => $this->configuration['value'],
       '#required' => TRUE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['button_type'] = [
       '#type' => 'select',

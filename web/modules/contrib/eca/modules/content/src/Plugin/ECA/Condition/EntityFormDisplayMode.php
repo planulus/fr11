@@ -76,6 +76,7 @@ class EntityFormDisplayMode extends StringComparisonBase {
       '#description' => $this->t('The machine name of the display mode. Example: <em>default</em>'),
       '#default_value' => $this->configuration['display_mode'],
       '#weight' => -70,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

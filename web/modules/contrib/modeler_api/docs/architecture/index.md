@@ -1,12 +1,12 @@
 # Architecture Overview
 
-The Modeler API follows a clear separation of concerns. It defines five plugin
+The Modeler API follows a clear separation of concerns. It defines six plugin
 types coordinated by a central API service, dynamic routing, and a permission
 system -- all wired together through Drupal's service container.
 
 ## Plugin system overview
 
-The module provides five plugin managers split into two discovery mechanisms:
+The module provides six plugin managers split into two discovery mechanisms:
 
 ### Attribute-based plugins (PHP classes)
 
@@ -22,6 +22,7 @@ The module provides five plugin managers split into two discovery mechanisms:
 | Context | `plugin.manager.modeler_api.context` | `MODULE.modeler_api.contexts.yml` | `Context` |
 | Dependency | `plugin.manager.modeler_api.dependency` | `MODULE.modeler_api.dependencies.yml` | `Dependency` |
 | Template Token | `plugin.manager.modeler_api.template_token` | `MODULE.modeler_api.template_tokens.yml` | `TemplateToken` |
+| Theme | `plugin.manager.modeler_api.theme` | `MODULE.modeler_api.themes.yml` | `Theme` |
 
 ## How Model Owner and Modeler interact
 
@@ -200,6 +201,7 @@ plugin.manager.modeler_api.modeler      # ModelerPluginManager
 plugin.manager.modeler_api.context      # ContextPluginManager
 plugin.manager.modeler_api.dependency   # DependencyPluginManager
 plugin.manager.modeler_api.template_token # TemplateTokenPluginManager
+plugin.manager.modeler_api.theme        # ThemePluginManager
 
 # List builders (resolve and merge YAML plugins)
 modeler_api.context_list_builder        # ContextListBuilder

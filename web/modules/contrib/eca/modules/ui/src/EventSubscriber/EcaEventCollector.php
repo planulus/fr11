@@ -3,6 +3,7 @@
 namespace Drupal\eca_ui\EventSubscriber;
 
 use Drupal\Core\Link;
+use Drupal\Core\Render\HtmlResponse;
 use Drupal\Core\Routing\RouteProviderInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\State\StateInterface;
@@ -56,7 +57,13 @@ final class EcaEventCollector implements EventSubscriberInterface {
     if (!$event->isMainRequest()) {
       return;
     }
-    $content = $event->getResponse()->getContent();
+    $response = $event->getResponse();
+    if (!($response instanceof HtmlResponse)) {
+      // Restrict injection to Drupal HTML responses so non-page responses are
+      // never modified by this subscriber.
+      return;
+    }
+    $content = $response->getContent();
     if ($content === FALSE) {
       // \Symfony\Component\HttpFoundation\BinaryFileResponse and others don't
       // allow adding content as intended here. Therefore, we're returning
@@ -99,7 +106,7 @@ final class EcaEventCollector implements EventSubscriberInterface {
       ])->toString();
     }
     if ($events) {
-      $event->getResponse()->setContent(str_replace('</body>', '<div id="eca-inspector-applied-events"><h2>' . $this->t('ECA events applied on this page') . '</h2><div class="item-list"><ul><li>' . implode('</li><li>', $events) . '</li></ul></div></div></body>', $content));
+      $response->setContent(str_replace('</body>', '<div id="eca-inspector-applied-events"><h2>' . $this->t('ECA events applied on this page') . '</h2><div class="item-list"><ul><li>' . implode('</li><li>', $events) . '</li></ul></div></div></body>', $content));
     }
   }
 

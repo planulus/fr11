@@ -72,6 +72,7 @@ class Image extends RenderElementActionBase {
       '#weight' => -100,
       '#default_value' => $this->configuration['uri'],
       '#required' => TRUE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['style_name'] = [
       '#type' => 'textfield',
@@ -91,6 +92,7 @@ class Image extends RenderElementActionBase {
       '#weight' => -80,
       '#default_value' => $this->configuration['alt'],
       '#required' => TRUE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['title'] = [
       '#type' => 'textfield',
@@ -99,6 +101,7 @@ class Image extends RenderElementActionBase {
       '#weight' => -70,
       '#default_value' => $this->configuration['title'],
       '#required' => FALSE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['width'] = [
       '#type' => 'textfield',
@@ -107,6 +110,7 @@ class Image extends RenderElementActionBase {
       '#weight' => -60,
       '#default_value' => $this->configuration['width'],
       '#required' => FALSE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['height'] = [
       '#type' => 'textfield',
@@ -115,6 +119,7 @@ class Image extends RenderElementActionBase {
       '#weight' => -50,
       '#default_value' => $this->configuration['height'],
       '#required' => FALSE,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

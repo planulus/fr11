@@ -12,13 +12,14 @@ parameters:
     # False positive in ErrorHandlerTrait: $shutdownFunctionEnabled is
     # captured by reference in a shutdown closure and can be flipped by
     # resetExtendedErrorHandling() before the closure executes. PHPStan
-    # surfaces the trait-closure error against one of the consuming classes
-    # (Drupal\eca\Service\Events). count: 1 keeps the suppression precise so
-    # any additional booleanNot.alwaysFalse in Events.php still surfaces.
+    # cannot model this reference-by-closure mutation and surfaces the
+    # booleanNot.alwaysFalse error against the trait file itself
+    # (src/ErrorHandlerTrait.php). count: 1 keeps the suppression precise so
+    # any additional booleanNot.alwaysFalse in that file still surfaces.
     -
       message: '#^Negated boolean expression is always false\.$#'
       count: 1
-      path: src/Service/Events.php
+      path: src/ErrorHandlerTrait.php
 
   excludePaths:
     - 'src/Token/ContribToken.php'

@@ -42,6 +42,15 @@ class EcaExecutionTokenSubscriber extends EcaExecutionSubscriberBase {
     $token_data = $this->tokenService->getTokenData();
     $event->setPrestate('token_data', $token_data);
     $this->tokenService->clearTokenData();
+    // Arm the restore right after the data has actually been cleared, and
+    // before anything else that could throw. AFTER_INITIAL_EXECUTION is
+    // dispatched even when this handler never ran - a listener throwing above
+    // this one's priority of 1000 is enough - and restoring an absent prestate
+    // would then replace the enclosing scope's token data with nothing.
+    // ::setPrestate() takes its value by reference, so it needs a variable.
+    // @see \Drupal\eca\Processor::execute()
+    $token_data_cleared = TRUE;
+    $event->setPrestate('token_data_cleared', $token_data_cleared);
     foreach ($forwardTokens as $key => $value) {
       $this->tokenService->addTokenData($key, $value);
     }
@@ -50,10 +59,18 @@ class EcaExecutionTokenSubscriber extends EcaExecutionSubscriberBase {
   /**
    * Subscriber method after initial execution.
    *
+   * Restores the token data that ::onBeforeInitialExecution() cleared, if it
+   * cleared any. Without that guard this would run for a chain whose before
+   * handler never got to save the enclosing scope.
+   *
    * @param \Drupal\eca\Event\AfterInitialExecutionEvent $event
    *   The according event.
    */
   public function onAfterInitialExecution(AfterInitialExecutionEvent $event): void {
+    if (!$event->getPrestate('token_data_cleared')) {
+      return;
+    }
+
     // Determine explicitly defined tokens to be received back.
     $receiveTokens = [];
     $triggeredEvent = $event->getEvent();

@@ -5,6 +5,7 @@ clazz
 componentscount
 Contentful
 ddev
+deepchat
 doctag
 endwith
 estensions

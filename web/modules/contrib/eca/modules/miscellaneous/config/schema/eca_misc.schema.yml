@@ -86,6 +86,10 @@ eca.event.plugin.routing:finished:
   type: eca.event.plugin
   label: 'Route building finished'
 
+eca.condition.plugin.eca_is_ajax:
+  type: eca.condition.plugin
+  label: 'Is Ajax'
+
 eca.condition.plugin.eca_route_match:
   type: eca.condition.plugin
   label: 'Route Match'
@@ -94,7 +98,8 @@ eca.condition.plugin.eca_route_match:
       type: integer
       label: 'Request'
       constraints:
-        Choice: [0, 1, 2]
+        EcaChoice:
+          choices: [0, 1, 2]
     route:
       type: string
       label: 'Route name'
@@ -102,13 +107,13 @@ eca.condition.plugin.eca_route_match:
       type: string
       label: 'Comparison operator'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidOperators'
     type:
       type: string
       label: 'Comparison type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidTypes'
     case:
       type: boolean
@@ -162,7 +167,7 @@ action.configuration.eca_token_load_query_arg:
   label: 'Configuration for the "Token Load Query Arg" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     argument_name:
       type: string
@@ -173,13 +178,14 @@ action.configuration.eca_token_load_route_param:
   label: 'Configuration for the "Token Load Route Param" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     request:
       type: integer
       label: 'Request'
       constraints:
-        Choice: [0, 1, 2]
+        EcaChoice:
+          choices: [0, 1, 2]
     parameter_name:
       type: string
       label: 'Name of route parameter'
@@ -192,7 +198,7 @@ action.configuration.eca_build_url_from_route:
   label: 'Configuration for the "Build URL from route" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     route_name:
       type: string

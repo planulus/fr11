@@ -75,6 +75,7 @@ class FormTriggered extends StringComparisonBase {
       '#description' => $this->t('The trigger name is the machine name of the form submit element. Example: <em>submit</em>. A custom trigger name can be defined for example with the action <em>"Form: add submit button"</em>.'),
       '#default_value' => $this->configuration['trigger_name'],
       '#weight' => -70,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

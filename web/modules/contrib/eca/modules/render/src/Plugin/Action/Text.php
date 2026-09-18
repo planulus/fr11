@@ -94,6 +94,16 @@ class Text extends RenderElementActionBase {
   }
 
   /**
+   * Get all valid filter formats.
+   *
+   * @return array
+   *   The IDs of all filter formats.
+   */
+  public static function getAllValidFilterFormats(): array {
+    return array_keys(\Drupal::entityTypeManager()->getStorage('filter_format')->loadMultiple());
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function calculateDependencies(): array {

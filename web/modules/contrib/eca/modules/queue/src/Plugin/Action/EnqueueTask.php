@@ -155,6 +155,7 @@ class EnqueueTask extends ConfigurableActionBase {
       '#default_value' => $this->configuration['task_name'],
       '#required' => TRUE,
       '#weight' => -50,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['task_value'] = [
       '#type' => 'textfield',
@@ -162,6 +163,7 @@ class EnqueueTask extends ConfigurableActionBase {
       '#description' => $this->t('You may optionally define a task value here for more granular task control.'),
       '#default_value' => $this->configuration['task_value'],
       '#weight' => -40,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['tokens'] = [
       '#type' => 'textarea',

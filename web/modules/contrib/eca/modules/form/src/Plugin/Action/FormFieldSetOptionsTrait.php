@@ -34,7 +34,7 @@ trait FormFieldSetOptionsTrait {
     $result = parent::access($object, $account, TRUE);
     if ($result->isAllowed() && $this->configuration['use_yaml'] && $this->configuration['validate_yaml']) {
       try {
-        $this->yamlParser->parse($this->configuration['value']);
+        $this->yamlParser->parse($this->configuration['options']);
       }
       catch (ParseException) {
         $result = AccessResult::forbidden('YAML data is not valid.');
@@ -101,6 +101,7 @@ trait FormFieldSetOptionsTrait {
       '#description' => $this->t('Can be a comma-separated sequence of key-value pairs (e.g. <em>k1:v1,k2:v2</em> or a token that holds a list of key-value pairs. Alternatively use YAML syntax to define one key-value pair per line. Example: <em>key1: "value1"</em>. When using tokens and YAML altogether, make sure that tokens are wrapped as a string. Example: <em>title: "[node:title]"</em>'),
       '#default_value' => $this->configuration['options'],
       '#weight' => -49,
+      '#eca_token_replacement' => TRUE,
     ];
     $this->buildYamlFormFields(
       $form,

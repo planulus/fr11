@@ -71,20 +71,6 @@ class ConfigEntityStorageDecorator extends EntityDecorator implements ConfigEnti
   /**
    * {@inheritdoc}
    */
-  public function loadRevision($revision_id) {
-    return $this->getOriginalObject()->loadRevision($revision_id);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function deleteRevision($revision_id) {
-    $this->getOriginalObject()->deleteRevision($revision_id);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function loadByProperties(array $values = []) {
     $entities = $this->getOriginalObject()->loadByProperties($values);
 

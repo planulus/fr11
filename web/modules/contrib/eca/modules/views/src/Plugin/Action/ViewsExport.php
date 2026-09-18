@@ -45,7 +45,7 @@ class ViewsExport extends ViewsQuery {
    *
    * @var string
    */
-  private string $filename;
+  protected string $filename;
 
   /**
    * {@inheritdoc}

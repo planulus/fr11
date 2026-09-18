@@ -31,6 +31,7 @@ abstract class FormStatePropertyActionBase extends FormActionBase {
       '#description' => $this->t('Nested properties are supported by using dot notation. Example: <em>level1.level2</em>'),
       '#default_value' => $this->configuration['property_name'],
       '#weight' => -50,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

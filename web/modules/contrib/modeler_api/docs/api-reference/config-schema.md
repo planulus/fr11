@@ -40,6 +40,26 @@ The `owner_modeler` structure is a nested map: `owner_id -> modeler_id ->
 {theme, storage}`. This allows configuring different themes and storage methods
 for each owner/modeler combination.
 
+**Theme values:** the ID of a theme discovered by the
+[Theme plugin manager](../plugin-managers/theme/index.md), or one of two
+reserved values:
+
+| Value | Constant | Meaning |
+|-------|----------|---------|
+| `auto` | `Form\Settings::THEME_OPTION_AUTO` | Resolve an applicable theme at render time. Also the meaning of an absent key |
+| `default` | `Form\Settings::THEME_OPTION_DEFAULT` | Keep the modeler's own look and feel |
+
+The value is not constrained by the schema, because the set of valid IDs
+depends on which modules are installed. A theme may therefore not use `auto` or
+`default` as its ID; discovery skips such a definition. A value that no longer
+resolves to a discoverable theme is treated as `default` -- both in the settings
+form and when a model is rendered.
+
+The module ships no default configuration for these keys, so an absent key is
+read as `auto`. See
+[automatic selection](../plugin-managers/theme/index.md#automatic-selection)
+for how a theme is chosen.
+
 **Storage options** (defined in `Form\Settings`):
 
 | Constant | Value | Description |

@@ -37,6 +37,7 @@ class EntityFieldValueChangedTest extends KernelTestBase {
     'user',
     'field',
     'text',
+    'filter',
     'node',
     'eca',
     'eca_content',

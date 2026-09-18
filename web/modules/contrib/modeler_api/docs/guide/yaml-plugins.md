@@ -1,9 +1,9 @@
 # YAML Plugin Definitions
 
-The Modeler API provides three YAML-based plugin types that allow any module to
-contribute metadata for Model Owners without writing PHP code. These are ideal
-for curating component palettes, defining ordering constraints, and providing
-template tokens.
+The Modeler API provides four YAML-based plugin types that allow any module to
+contribute metadata without writing PHP code. These are ideal for curating
+component palettes, defining ordering constraints, providing template tokens,
+and styling the modeler canvas.
 
 ## Contexts {: #contexts }
 
@@ -374,6 +374,123 @@ eca:
 
 ---
 
+## Themes {: #themes }
+
+Themes define alternative styling for the modeler canvas. Each theme points at
+one or more Drupal asset libraries whose CSS overrides the look and feel the
+modeler ships by default.
+
+Unlike the three plugin types above, a theme does not belong to a single Model
+Owner. It is selected per owner/modeler combination in the Modeler API settings
+form, and it may restrict itself to a list of owners, a list of modelers, or
+both. A theme that restricts itself to at least one of the two can also be
+applied automatically, without anybody selecting it.
+
+### File naming
+
+Place a YAML file named `my_module.modeler_api.themes.yml` in your module's
+root directory.
+
+### Structure
+
+```yaml
+my_theme:
+  label: 'Human-readable name'
+  description: 'What this theme looks like.'
+  libraries:
+    - my_module/my_theme
+  owners:
+    - target_owner_id
+  modelers:
+    - target_modeler_id
+  weight: 0
+```
+
+### Key reference
+
+| Key | Type | Required | Description |
+|-----|------|----------|-------------|
+| `label` | `string` | Yes | Human-readable name shown in the settings form |
+| `description` | `string` | No | Human-readable description |
+| `libraries` | `string[]` | Yes | Drupal asset library names to attach |
+| `owners` | `string[]` | No | Model Owner plugin IDs. Omit for all owners |
+| `modelers` | `string[]` | No | Modeler plugin IDs. Omit for all modelers |
+| `weight` | `int` | No | Order among automatic selection candidates, lower first. Defaults to `0` |
+
+A definition without a `label` or without at least one library is skipped, and
+so is one whose ID is `auto` or `default` -- those two are reserved for the
+settings values described below.
+
+### Selecting a theme
+
+The **Theme** setting per owner/modeler combination takes three kinds of value:
+
+| Value | Meaning |
+|-------|---------|
+| `auto` | Let the Modeler API pick an applicable theme. Also the behavior when nothing is stored |
+| `default` | Keep the modeler's own look and feel |
+| a theme ID | Pin that one theme explicitly |
+
+Under `auto` the theme is resolved on every request, so no configuration is
+written and a theme starts applying the moment its module is installed. Only a
+theme that declares a non-empty `owners` or `modelers` list takes part: one
+that declares neither applies everywhere by design, and picking it
+automatically would let any module change the styling of every canvas on the
+site merely by being installed. It stays selectable by hand.
+
+Among the themes that qualify, a theme naming both an owner and a modeler beats
+one naming only one of the two; then the lowest `weight` wins; then the
+alphabetically first theme ID. Discovery order is deliberately not used,
+because it follows module weight and would change when unrelated modules are
+installed. If nothing qualifies, the modeler keeps its own look and feel.
+
+### The asset library
+
+The `libraries` entries are ordinary Drupal asset libraries from your module's
+`*.libraries.yml`. Declare the CSS in the `theme` category, which is ordered
+last, so that it is loaded after the CSS of the modeler:
+
+```yaml
+# my_module.libraries.yml
+my_theme:
+  version: VERSION
+  css:
+    theme:
+      css/my-theme.css: {}
+```
+
+See the [Theme Plugin Manager](../plugin-managers/theme/index.md) page for the
+full guidance on how to construct such CSS.
+
+### Example
+
+```yaml
+dark:
+  label: 'Dark'
+  description: 'A dark canvas with light strokes.'
+  libraries:
+    - my_module/theme_base
+    - my_module/theme_dark
+  modelers:
+    - workflow_modeler
+  weight: -10
+
+print_friendly:
+  label: 'Print friendly'
+  libraries:
+    - my_module/theme_print
+```
+
+The `dark` theme is offered for every Model Owner, but only when the Workflow
+Modeler is used. The `print_friendly` theme is offered everywhere.
+
+Only `dark` is a candidate for automatic selection, because it names a modeler.
+Its negative weight puts it ahead of other themes of the same specificity.
+`print_friendly` restricts nothing, so it applies everywhere and has to be
+selected by hand.
+
+---
+
 ## Best practices
 
 ### Contexts
@@ -399,9 +516,24 @@ eca:
   what the token represents.
 - Group related tokens under common parent nodes for better organization.
 
+### Themes
+
+- Override selected properties -- colors, fonts, borders -- rather than
+  restating the modeler's full layout, so the theme survives layout changes in
+  the modeler.
+- Scope every rule to the modeler's wrapper element so the theme does not leak
+  into the rest of the admin page.
+- Only set `owners` or `modelers` when the CSS genuinely depends on that owner
+  or modeler. An unrestricted theme is reusable -- but it is also never applied
+  automatically, so set them when the theme is meant to take effect on its own.
+- Leave `weight` alone unless two themes of your own compete for the same
+  combination. It only decides between automatic selection candidates.
+- Split shared rules into their own library and list several libraries in one
+  theme instead of duplicating CSS between variations.
+
 ## Alter hooks
 
-All three YAML-based plugin types support alter hooks for programmatic
+All four YAML-based plugin types support alter hooks for programmatic
 modifications:
 
 ```php
@@ -427,5 +559,15 @@ function my_module_modeler_api_dependency_info_alter(array &$definitions): void 
  */
 function my_module_modeler_api_template_token_info_alter(array &$definitions): void {
   // Modify template token definitions.
+}
+
+/**
+ * Implements hook_modeler_api_theme_info_alter().
+ */
+function my_module_modeler_api_theme_info_alter(array &$definitions): void {
+  // Add another library to an existing theme.
+  if (isset($definitions['dark'])) {
+    $definitions['dark']['libraries'][] = 'my_module/dark_extras';
+  }
 }
 ```

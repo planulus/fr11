@@ -15,10 +15,10 @@ use Drupal\eca\Plugin\Action\ConfigurableActionBase;
  */
 #[Action(
   id: 'eca_state_read',
-  label: new TranslatableMarkup('Persistent state: read'),
+  label: new TranslatableMarkup('ECA state: read'),
 )]
 #[EcaAction(
-  description: new TranslatableMarkup('Reads a value from the Drupal state by the given key. The result is stored in a token.'),
+  description: new TranslatableMarkup('Reads a value from ECA\'s own persistent key value store by the given key. The result is stored in a token. This is not Drupal\'s state service; use <em>Key value store: read</em> with the collection "state" to read that.'),
   version_introduced: '1.1.0',
 )]
 class EcaStateRead extends ConfigurableActionBase {
@@ -63,7 +63,7 @@ class EcaStateRead extends ConfigurableActionBase {
       '#title' => $this->t('State key'),
       '#default_value' => $this->configuration['key'],
       '#weight' => -20,
-      '#description' => $this->t('The key of the Drupal state.'),
+      '#description' => $this->t("The key of the value in ECA's key value store."),
       '#eca_token_replacement' => TRUE,
     ];
     $form['token_name'] = [

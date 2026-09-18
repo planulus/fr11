@@ -39,8 +39,8 @@ class CodeExtension extends AbstractExtension {
    */
   public function getFilters(): array {
     return [
-      new TwigFilter('abbr_class', [$this, 'abbrClass'], ['pre_escape' => 'html', 'is_safe' => ['html']]),
-      new TwigFilter('file_link', [$this, 'getFileLink']),
+      new TwigFilter('abbr_class', $this->abbrClass(...), ['pre_escape' => 'html', 'is_safe' => ['html']]),
+      new TwigFilter('file_link', $this->getFileLink(...)),
     ];
   }
 
@@ -49,7 +49,7 @@ class CodeExtension extends AbstractExtension {
    */
   public function getFunctions(): array {
     return [
-      new TwigFunction('wp_dump', [$this, 'dump']),
+      new TwigFunction('wp_dump', $this->dump(...)),
     ];
   }
 

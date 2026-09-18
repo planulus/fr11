@@ -30,7 +30,7 @@ abstract class AddAttachedBase extends RenderActionBase {
       '#maxlength' => 1024,
       '#element_validate' => [[FormFieldMachineName::class, 'validateElementsMachineName']],
       '#title' => $this->t('Machine name'),
-      '#description' => $this->t('Specify the machine name / key of the render element.<br>Leave blank to target parent.'),
+      '#description' => $this->t('Specify the machine name / key of the render element.<br />Leave blank to target parent.'),
       '#default_value' => $this->configuration['name'],
       '#weight' => -50,
       '#eca_token_replacement' => TRUE,

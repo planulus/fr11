@@ -29,8 +29,11 @@ use Drupal\eca_content\Plugin\EntitySaveTrait;
  * <p>We need to replace the core base class because within the ECA context
  * entities should not be saved after modifying a field value.</p>
  *
- * <p>The replacement is achieved with PHP's class_alias(),
- * see eca_content.module.</p>
+ * <p>The replacement is achieved by rewriting plugin definitions: every action
+ * plugin whose class extends core's base class gets remapped onto
+ * Drupal\eca_content\Plugin\Action\CoreFieldUpdateAction, a subclass of this
+ * base class, see
+ * Drupal\eca_content\Hook\PluginHooks::actionInfoAlter().</p>
  */
 abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableInterface, DependentPluginInterface, PluginFormInterface {
 
@@ -42,10 +45,14 @@ abstract class FieldUpdateActionBase extends ActionBase implements ConfigurableI
   /**
    * {@inheritdoc}
    *
-   * This base class replaces core's FieldUpdateActionBase via class_alias().
-   * Core actions (e.g. PromoteNode) that extend this base must remain visible
-   * outside ECA, so this returns TRUE. ECA-specific subclasses like
+   * Action plugins that core builds on its own FieldUpdateActionBase (e.g.
+   * node_promote_action) are remapped onto a subclass of this base class, which
+   * brings them within reach of
+   * Drupal\eca\PluginManager\Action::filterEcaDefinitions(). They must remain
+   * visible outside ECA, so this returns TRUE. ECA-specific subclasses like
    * SetFieldValue override this to return FALSE.
+   *
+   * @see \Drupal\eca_content\Hook\PluginHooks::actionInfoAlter()
    */
   public static function externallyAvailable(): bool {
     return TRUE;

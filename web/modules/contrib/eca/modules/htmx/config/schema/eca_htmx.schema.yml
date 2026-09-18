@@ -1,5 +1,5 @@
 action.configuration.eca_htmx_poll:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Configuration for the "HTMX: poll region" action'
   mapping:
     url:
@@ -33,7 +33,7 @@ action.configuration.eca_htmx_poll:
       label: 'Request only the main content'
 
 action.configuration.eca_htmx_element:
-  type: eca_render.action_base
+  type: eca_render.render_element_action_base
   label: 'Configuration for the "HTMX: render element" action'
   mapping:
     method:
@@ -149,13 +149,13 @@ eca.condition.plugin.eca_htmx_header:
       type: string
       label: 'Comparison operator'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidOperators'
     type:
       type: string
       label: 'Comparison type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidTypes'
     case:
       type: boolean

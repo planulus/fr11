@@ -306,7 +306,7 @@ class Eca extends ModelOwnerBase {
         $form = $this->actionsService()->getConfigurationForm($plugin, $form_state) ?? [
           'error_message' => [
             '#type' => 'markup',
-            '#markup' => '<strong>' . $this->t('Error in configuration form!!!') . '</strong><br><br>' . $this->t('Details can be found in the Drupal error log.'),
+            '#markup' => '<strong>' . $this->t('Error in configuration form!!!') . '</strong><br /><br />' . $this->t('Details can be found in the Drupal error log.'),
           ],
         ];
       }
@@ -320,7 +320,7 @@ class Eca extends ModelOwnerBase {
     catch (\Throwable $ex) {
       $form['error_message'] = [
         '#type' => 'markup',
-        '#markup' => '<strong>' . $this->t('Error in configuration form!!!') . '</strong><br><br>' . $ex->getMessage(),
+        '#markup' => '<strong>' . $this->t('Error in configuration form!!!') . '</strong><br /><br />' . $ex->getMessage(),
       ];
     }
     return $form;

@@ -29,7 +29,7 @@
 
 .webprofiler__collector.active {
   background: #f3f4f9;
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 2px 5px rgb(0, 0, 0, 0.05);
 }
 
 .webprofiler__collector.active a {
@@ -137,7 +137,7 @@
   border: none;
   border-radius: 2px;
   background-color: #003ecc;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 2px rgb(0, 0, 0, 0.25);
 }
 
 .wp-executable-toggle:hover,
@@ -155,7 +155,7 @@
   padding: 15px;
   border: 1px solid #e0e0e0;
   background-color: #fff;
-  box-shadow: 0 0 1px rgba(128, 128, 128, 0.2);
+  box-shadow: 0 0 1px rgb(128, 128, 128, 0.2);
   font-size: 12px;
   line-height: 1.7;
 }
@@ -171,11 +171,11 @@
 }
 
 #twig-dump .status-warning {
-  background: rgba(240, 181, 24, 0.3);
+  background: rgb(240, 181, 24, 0.3);
 }
 
 #twig-dump .status-success {
-  background: rgba(100, 189, 99, 0.2);
+  background: rgb(100, 189, 99, 0.2);
 }
 
 #twig-dump .status-info {

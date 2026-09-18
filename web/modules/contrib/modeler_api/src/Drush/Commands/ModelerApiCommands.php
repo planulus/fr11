@@ -3,6 +3,7 @@
 namespace Drupal\modeler_api\Drush\Commands;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\modeler_api\Api;
 use Drupal\modeler_api\ExportRecipe;
 use Drupal\modeler_api\Plugin\ModelOwnerPluginManager;
 use Drupal\modeler_api\Update;
@@ -24,6 +25,7 @@ final class ModelerApiCommands extends DrushCommands {
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly ModelOwnerPluginManager $modelOwnerPluginManager,
+    private readonly Api $api,
     private readonly ExportRecipe $exportRecipe,
     private readonly Update $update,
   ) {
@@ -43,6 +45,7 @@ final class ModelerApiCommands extends DrushCommands {
     return new ModelerApiCommands(
       $container->get('entity_type.manager'),
       $container->get('plugin.manager.modeler_api.model_owner'),
+      $container->get('modeler_api.service'),
       $container->get('modeler_api.export.recipe'),
       $container->get('modeler_api.update'),
     );
@@ -139,6 +142,52 @@ final class ModelerApiCommands extends DrushCommands {
     $namespace = $options['namespace'] ?? ExportRecipe::DEFAULT_NAMESPACE;
     $destination = $options['destination'] ?? ExportRecipe::DEFAULT_DESTINATION;
     $this->exportRecipe->doExport($owner, $model, NULL, $namespace, $destination);
+  }
+
+  /**
+   * Export a model as a standalone graph artifact.
+   */
+  #[Command(name: 'modeler_api:model:export-graph', aliases: [])]
+  #[Argument(name: 'owner_id', description: 'The owner of the model.')]
+  #[Argument(name: 'id', description: 'The ID of the model.')]
+  #[Option(name: 'destination', description: 'The file where to store the graph artifact.')]
+  #[Usage(name: 'modeler_api:model:export-graph OWNER_ID MODEL_ID', description: 'Export the model graph to MODEL_ID.EXTENSION in the current directory.')]
+  #[Usage(name: 'modeler_api:model:export-graph OWNER_ID MODEL_ID --destination=../graphs/model.json', description: 'Export the model graph to a custom file.')]
+  public function exportModelGraph(
+    string $owner_id,
+    string $id,
+    array $options = [
+      'destination' => self::OPT,
+    ],
+  ): void {
+    $owner_id = mb_strtolower($owner_id);
+    $id = mb_strtolower($id);
+    /** @var \Drupal\modeler_api\Plugin\ModelerApiModelOwner\ModelOwnerInterface $owner */
+    $owner = $this->modelOwnerPluginManager->createInstance($owner_id);
+    /** @var \Drupal\Core\Config\Entity\ConfigEntityInterface|null $model */
+    $model = $this->entityTypeManager->getStorage($owner->configEntityTypeId())->load($id);
+    if ($model === NULL) {
+      $this->io()->error('The given model does not exist!');
+      return;
+    }
+
+    $modeler = $owner->getModeler($model);
+    $graph = $this->api->exportModelGraph($owner, $model);
+    if ($modeler === NULL || $graph === NULL) {
+      $this->io()->error('The modeler does not support standalone graph exports.');
+      return;
+    }
+
+    $destination = $options['destination'] ?? NULL;
+    if ($destination === NULL) {
+      $extension = $modeler->getRawFileExtension() ?? 'data';
+      $destination = $id . '.' . $extension;
+    }
+    if (file_put_contents($destination, $graph) === FALSE) {
+      $this->io()->error('The graph artifact could not be written.');
+      return;
+    }
+    $this->io()->success(sprintf('The graph artifact was written to %s.', $destination));
   }
 
 }

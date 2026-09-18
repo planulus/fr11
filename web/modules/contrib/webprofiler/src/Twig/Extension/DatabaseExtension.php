@@ -19,9 +19,9 @@ class DatabaseExtension extends AbstractExtension {
    */
   public function getFunctions(): array {
     return [
-      new TwigFunction('query_type', [$this, 'queryType']),
-      new TwigFunction('query', [$this, 'query']),
-      new TwigFunction('query_executable', [$this, 'queryExecutable']),
+      new TwigFunction('query_type', $this->queryType(...)),
+      new TwigFunction('query', $this->query(...)),
+      new TwigFunction('query_executable', $this->queryExecutable(...)),
     ];
   }
 

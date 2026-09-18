@@ -66,6 +66,11 @@ grouped by responsibility:
 | `settingsForm()` | `?string` | FQCN of a settings form class, or `NULL` |
 | `modelConfigFormAlter(array &$form)` | `void` | Alter the default model metadata config form |
 
+The form the alter hook receives is grouped: `version`, `storage` and
+`changelog` live under `$form['advanced']`, and `summary`, `recipes`,
+`export_config`, `modules` and `config_actions` under
+`$form['recipe_export']`.
+
 ### Model lifecycle
 
 | Method | Return | Description |

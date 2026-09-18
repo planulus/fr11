@@ -67,7 +67,7 @@ action.configuration.eca_config_read:
   label: 'Configuration for the "Config Read" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     include_overridden:
       type: boolean

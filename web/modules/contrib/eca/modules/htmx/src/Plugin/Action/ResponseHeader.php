@@ -66,8 +66,6 @@ class ResponseHeader extends ResponseActionBase {
    */
   protected const array TRIGGER_HEADERS = [
     'trigger',
-    'trigger_after_settle',
-    'trigger_after_swap',
   ];
 
   /**
@@ -122,8 +120,6 @@ class ResponseHeader extends ResponseActionBase {
         'reswap' => $this->t('Reswap (HX-Reswap)'),
         'reselect' => $this->t('Reselect (HX-Reselect)'),
         'trigger' => $this->t('Trigger (HX-Trigger)'),
-        'trigger_after_settle' => $this->t('Trigger after settle (HX-Trigger-After-Settle)'),
-        'trigger_after_swap' => $this->t('Trigger after swap (HX-Trigger-After-Swap)'),
       ],
       '#default_value' => $this->configuration['header'],
       '#weight' => -20,
@@ -205,7 +201,7 @@ class ResponseHeader extends ResponseActionBase {
     $form['location_values'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Location: values'),
-      '#description' => $this->t('A set of values to submit with the request, as a key-value list in YAML format. Example:<em><br/>key: value</em>. When using tokens, wrap them as a string. Example: <em>id: "[node:nid]"</em>.'),
+      '#description' => $this->t('A set of values to submit with the request, as a key-value list in YAML format. Example:<em><br />key: value</em>. When using tokens, wrap them as a string. Example: <em>id: "[node:nid]"</em>.'),
       '#default_value' => $this->configuration['location_values'],
       '#weight' => -3,
       '#eca_token_replacement' => TRUE,
@@ -214,7 +210,7 @@ class ResponseHeader extends ResponseActionBase {
     $form['location_headers'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Location: headers'),
-      '#description' => $this->t('Headers to submit with the request, as a key-value list in YAML format. Example:<em><br/>X-Custom: value</em>. When using tokens, wrap them as a string. Example: <em>X-Custom: "[token]"</em>.'),
+      '#description' => $this->t('Headers to submit with the request, as a key-value list in YAML format. Example:<em><br />X-Custom: value</em>. When using tokens, wrap them as a string. Example: <em>X-Custom: "[token]"</em>.'),
       '#default_value' => $this->configuration['location_headers'],
       '#weight' => -2,
       '#eca_token_replacement' => TRUE,
@@ -307,11 +303,7 @@ class ResponseHeader extends ResponseActionBase {
       return TRUE;
     }
     if (in_array($header, self::TRIGGER_HEADERS, TRUE)) {
-      match ($header) {
-        'trigger' => $htmx->triggerHeader($value),
-        'trigger_after_settle' => $htmx->triggerAfterSettleHeader($value),
-        'trigger_after_swap' => $htmx->triggerAfterSwapHeader($value),
-      };
+      $htmx->triggerHeader($value);
       return TRUE;
     }
     match ($header) {

@@ -7,7 +7,7 @@ action.configuration.eca_get_current_langcode:
   label: 'Configuration for the "Get Current Langcode" action'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
 
 action.configuration.eca_set_current_langcode:
@@ -18,8 +18,13 @@ action.configuration.eca_set_current_langcode:
       type: string
       label: 'Language'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidLangcodes'
+
+action.configuration.eca_reset_language_negotiation:
+  type: mapping
+  label: 'Configuration for the "Reset Language Negotiation" action'
+  mapping: {}
 
 action.configuration.eca_create_entity_translation:
   type: mapping
@@ -29,11 +34,11 @@ action.configuration.eca_create_entity_translation:
       type: string
       label: 'Source language'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidLangcodes'
     target_langcode:
       type: string
       label: 'Target language'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Validation\EcaConstraintCallbacks::getAllValidLangcodes'

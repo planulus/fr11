@@ -201,6 +201,7 @@ class Link extends RenderElementActionBase {
       '#default_value' => $this->configuration['width'],
       '#weight' => -170,
       '#required' => FALSE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['display_as'] = [
       '#type' => 'select',

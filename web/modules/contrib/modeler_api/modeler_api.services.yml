@@ -2,25 +2,15 @@ services:
 
   modeler_api.service:
     class: Drupal\modeler_api\Api
+    autowire: true
+    # Every dependency is wrapped in a lazy service closure (via the
+    # #[AutowireServiceClosure] attributes on the constructor) to avoid
+    # container-build-time circular references. The only argument that cannot
+    # be autowired is the optional token.tree_builder: #[AutowireServiceClosure]
+    # cannot express an optional service, so it is wired explicitly here with
+    # the "@?" optional-service syntax to preserve its optionality.
     arguments:
-      - '@current_user'
-      - '@plugin.manager.modeler_api.model_owner'
-      - '@plugin.manager.modeler_api.modeler'
-      - '@config.factory'
-      - '@config.storage.export'
-      - '@file_system'
-      - '@plugin.manager.menu.link'
-      - '@plugin.manager.modeler_api.context'
-      - '@plugin.manager.modeler_api.dependency'
-      - '@plugin.manager.modeler_api.template_token'
-      - '@modeler_api.context_list_builder'
-      - '@modeler_api.dependency_list_builder'
-      - '@modeler_api.template_token_list_builder'
-      - '@router.no_access_checks'
-      - !service_closure '@entity_type.manager'
-      - !service_closure '@router.route_provider'
-      - !service_closure '@token'
-      - !service_closure '@?token.tree_builder'
+      $tokenTreeBuilderFactory: !service_closure '@?token.tree_builder'
 
   logger.channel.modeler_api:
     parent: logger.channel_base
@@ -69,6 +59,12 @@ services:
       - '@module_handler'
       - '@cache.discovery'
 
+  plugin.manager.modeler_api.theme:
+    class: Drupal\modeler_api\Plugin\ThemePluginManager
+    arguments:
+      - '@module_handler'
+      - '@cache.discovery'
+
   modeler_api.context_list_builder:
     class: Drupal\modeler_api\ContextListBuilder
     arguments:
@@ -107,6 +103,7 @@ services:
   Drupal\modeler_api\Plugin\ContextPluginManager: '@plugin.manager.modeler_api.context'
   Drupal\modeler_api\Plugin\DependencyPluginManager: '@plugin.manager.modeler_api.dependency'
   Drupal\modeler_api\Plugin\TemplateTokenPluginManager: '@plugin.manager.modeler_api.template_token'
+  Drupal\modeler_api\Plugin\ThemePluginManager: '@plugin.manager.modeler_api.theme'
   Drupal\modeler_api\ContextListBuilder: '@modeler_api.context_list_builder'
   Drupal\modeler_api\DependencyListBuilder: '@modeler_api.dependency_list_builder'
   Drupal\modeler_api\TemplateTokenListBuilder: '@modeler_api.template_token_list_builder'

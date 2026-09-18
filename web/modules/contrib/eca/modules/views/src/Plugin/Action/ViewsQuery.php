@@ -131,6 +131,7 @@ class ViewsQuery extends ConfigurableActionBase {
       '#default_value' => $this->configuration['display_id'],
       '#description' => $this->t('Write the view <code>display id</code> to execute. Set as default to use the default view configuration.'),
       '#weight' => -40,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['arguments'] = [
       '#type' => 'textfield',
@@ -139,6 +140,7 @@ class ViewsQuery extends ConfigurableActionBase {
       '#description' => $this->t('Provide the values for contextual filters in the same order as they are defined in the view. Separate multiple values with the <code>/</code> character.'),
       '#maxlength' => 512,
       '#weight' => -30,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

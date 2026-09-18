@@ -4,6 +4,7 @@ namespace Drupal\Tests\eca\Kernel;
 
 use Drupal\Component\Serialization\Yaml;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Render\Markup;
 use Drupal\Core\TypedData\ListDataDefinition;
 use Drupal\Core\TypedData\Plugin\DataType\ItemList;
 use Drupal\KernelTests\KernelTestBase;
@@ -458,6 +459,107 @@ YAML;
     $token_services->addTokenData('node', $node);
     $this->assertEquals('Prefix Terms &amp; Conditions Suffix', $token_services->replace('Prefix [node:title] Suffix'));
     $this->assertEquals('Prefix Terms & Conditions Suffix', $token_services->replacePlain('Prefix [plain:node:title] Suffix'));
+    // The [plain:*] token type is documented to skip escaping, and ::replace()
+    // must honor that too - not only ::replacePlain().
+    $this->assertEquals('Prefix Terms & Conditions Suffix', $token_services->replace('Prefix [plain:node:title] Suffix'));
+  }
+
+  /**
+   * Tests escaping of root-level token replacement values.
+   *
+   * Root-level tokens are tokens without a colon, for example [mytoken]. Values
+   * that make no safety promise must be escaped by the token system, while
+   * values that do - markup objects and DTOs - must pass through unescaped.
+   *
+   * @see \Drupal\eca\Hook\TokenHooks::tokens()
+   * @see \Drupal\eca\Token\TokenDecoratorTrait::scanRootLevelTokens()
+   */
+  public function testRootLevelTokenEscaping(): void {
+    /** @var \Drupal\eca\Token\TokenInterface $token_services */
+    $token_services = \Drupal::service('eca.token_services');
+
+    // An untrusted raw string handed in via the $data argument must be escaped
+    // by \Drupal\Core\Utility\Token::replace().
+    $this->assertEquals('Prefix &lt;em&gt;x&lt;/em&gt; Suffix', $token_services->replace('Prefix [evil] Suffix', ['evil' => '<em>x</em>']));
+    $this->assertEquals('&lt;script&gt;alert(1)&lt;/script&gt;', $token_services->replace('[evil]', ['evil' => '<script>alert(1)</script>']));
+    $this->assertEquals('Terms &amp; Conditions', $token_services->replace('[evil]', ['evil' => 'Terms & Conditions']));
+
+    // A stringable object that is not markup makes no safety promise either.
+    $stringable = new class() {
+
+      /**
+       * Returns an unsafe string representation.
+       */
+      public function __toString(): string {
+        return '<em>x</em>';
+      }
+
+    };
+    $this->assertEquals('&lt;em&gt;x&lt;/em&gt;', $token_services->replace('[evil]', ['evil' => $stringable]));
+
+    // Values that already assert to be safe markup must pass through unchanged.
+    // Note: ::addTokenData() cannot be used here, because it wraps a markup
+    // object into a DTO - ::getTokenType() only recognizes entities and DTOs.
+    $this->assertEquals('Prefix <em>safe</em> Suffix', $token_services->replace('Prefix [safe] Suffix', ['safe' => Markup::create('<em>safe</em>')]));
+
+    // DTO root tokens keep the author-trust assumption of the "dto" token type
+    // so that [mydto] and [mydto:property] behave consistently.
+    $token_services->addTokenData('mydto', 'Terms & Conditions');
+    $this->assertInstanceOf(DataTransferObject::class, $token_services->getTokenData('mydto'));
+    $this->assertEquals('Terms & Conditions', $token_services->replace('[mydto]'));
+
+    $token_services->addTokenData('mydto', DataTransferObject::fromUserInput('key1: <em>val1</em>'));
+    $this->assertEquals(Yaml::encode(['key1' => '<em>val1</em>']), $token_services->replace('[mydto]'));
+
+    // Entities keep resolving to their (numeric, hence escaping-neutral) ID.
+    $this->createContentType(['type' => 'article', 'name' => 'Article']);
+    /** @var \Drupal\node\NodeInterface $node */
+    $node = Node::create([
+      'type' => 'article',
+      'tnid' => 0,
+      'uid' => 0,
+      'status' => 1,
+      'title' => 'Terms & Conditions',
+    ]);
+    $node->save();
+    $token_services->addTokenData('mynode', $node);
+    $this->assertEquals((string) $node->id(), $token_services->replace('[mynode]'));
+  }
+
+  /**
+   * Tests that an unsaved entity yields no root-level token replacement.
+   *
+   * An entity that was never saved has no ID, so there is nothing to replace
+   * the token with. Recording an empty replacement would silently swallow the
+   * token, hiding the fact that the data was not usable.
+   *
+   * @see \Drupal\eca\Hook\TokenHooks::rootTokenValueToString()
+   */
+  public function testUnsavedEntityRootToken(): void {
+    /** @var \Drupal\eca\Token\TokenInterface $token_services */
+    $token_services = \Drupal::service('eca.token_services');
+
+    $this->createContentType(['type' => 'article', 'name' => 'Article']);
+    /** @var \Drupal\node\NodeInterface $node */
+    $node = Node::create([
+      'type' => 'article',
+      'tnid' => 0,
+      'uid' => 0,
+      'status' => 1,
+      'title' => 'Not saved yet',
+    ]);
+    $this->assertNull($node->id(), 'The entity must not have an ID yet.');
+
+    $token_services->addTokenData('unsaved', $node);
+    $this->assertSame($node, $token_services->getTokenData('unsaved'));
+    // Without a replacement value, the token text stays untouched.
+    $this->assertEquals('[unsaved]', $token_services->replace('[unsaved]'));
+    // The "clear" option still removes it, like any other unresolved token.
+    $this->assertEquals('', $token_services->replaceClear('[unsaved]'));
+
+    // Once saved, the entity resolves to its ID again.
+    $node->save();
+    $this->assertEquals((string) $node->id(), $token_services->replace('[unsaved]'));
   }
 
 }

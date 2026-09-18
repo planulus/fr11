@@ -53,10 +53,11 @@ action.configuration.eca_access_set_result:
       type: string
       label: 'Access result'
       constraints:
-        Choice:
-          - forbidden
-          - allowed
-          - neutral
+        EcaChoice:
+          choices:
+            - forbidden
+            - allowed
+            - neutral
 
 action.configuration.eca_access_set_file_download_result:
   type: mapping
@@ -66,10 +67,11 @@ action.configuration.eca_access_set_file_download_result:
       type: string
       label: 'Access result'
       constraints:
-        Choice:
-          - forbidden
-          - allowed
-          - neutral
+        EcaChoice:
+          choices:
+            - forbidden
+            - allowed
+            - neutral
     headers:
       type: string
       label: 'HTTP headers'

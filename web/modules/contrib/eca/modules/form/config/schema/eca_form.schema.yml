@@ -130,13 +130,13 @@ eca.condition.plugin.eca_form_operation:
       type: string
       label: 'Comparison operator'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidOperators'
     type:
       type: string
       label: 'Comparison type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidTypes'
     case:
       type: boolean
@@ -167,13 +167,13 @@ eca.condition.plugin.eca_form_field_value:
       type: string
       label: 'Comparison operator'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidOperators'
     type:
       type: string
       label: 'Comparison type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidTypes'
     case:
       type: boolean
@@ -190,13 +190,13 @@ eca.condition.plugin.eca_form_triggered:
       type: string
       label: 'Comparison operator'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidOperators'
     type:
       type: string
       label: 'Comparison type'
       constraints:
-        Choice:
+        EcaChoice:
           callback: '\Drupal\eca\Plugin\ECA\Condition\StringComparisonBase::getAllValidTypes'
     case:
       type: boolean
@@ -215,7 +215,7 @@ action.configuration.eca_form_build_entity:
   label: 'Configuration for the "Form Build Entity" action'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
 
 action.configuration.eca_form_field_add_state:
@@ -230,30 +230,32 @@ action.configuration.eca_form_field_add_state:
       label: 'State'
       constraints:
         # @see \Drupal\eca_form\Plugin\Action\FormFieldAddState::buildConfigurationForm()
-        Choice:
-          - 'enabled'
-          - 'disabled'
-          - 'required'
-          - 'optional'
-          - 'visible'
-          - 'invisible'
-          - 'checked'
-          - 'unchecked'
-          - 'expanded'
-          - 'collapsed'
+        EcaChoice:
+          choices:
+            - 'enabled'
+            - 'disabled'
+            - 'required'
+            - 'optional'
+            - 'visible'
+            - 'invisible'
+            - 'checked'
+            - 'unchecked'
+            - 'expanded'
+            - 'collapsed'
         NotBlank: []
     condition:
       type: string
       label: 'Condition'
       constraints:
-        Choice:
-          - empty
-          - filled
-          - checked
-          - unchecked
-          - expanded
-          - collapsed
-          - value
+        EcaChoice:
+          choices:
+            - empty
+            - filled
+            - checked
+            - unchecked
+            - expanded
+            - collapsed
+            - value
         NotBlank: []
     value:
       type: string
@@ -269,7 +271,7 @@ action.configuration.eca_form_field_get_default_value:
   label: 'Configuration for the "Form Field Get Default Value" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     field_name:
       type: string
@@ -282,7 +284,7 @@ action.configuration.eca_form_field_get_options:
   label: 'Configuration for the "Form Field Get Options" action'
   mapping:
     token_name:
-      type: label
+      type: eca.token_name
       label: 'Name of token'
     field_name:
       type: string
@@ -295,7 +297,7 @@ action.configuration.eca_form_field_get_value:
   label: 'Configuration for the "Form Field Get Value" action'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
     field_name:
       type: string
@@ -462,7 +464,7 @@ action.configuration.eca_form_field_set_weight:
   label: 'Configuration for the "Form Field Set Weight" action'
   mapping:
     weight:
-      type: string
+      type: weight
       label: 'Element weight'
     field_name:
       type: string
@@ -475,7 +477,7 @@ action.configuration.eca_form_state_get_property_value:
   label: 'Configuration for the "Form State Get Property Value" action'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
     property_name:
       type: string
@@ -689,11 +691,12 @@ action.configuration.eca_form_add_submit_button:
       type: string
       label: 'Button type'
       constraints:
-        Choice:
-          - _none
-          - primary
-          - secondary
-          - danger
+        EcaChoice:
+          choices:
+            - _none
+            - primary
+            - secondary
+            - danger
         NotBlank: []
 
 action.configuration.eca_form_add_textfield:
@@ -736,7 +739,7 @@ action.configuration.eca_form_get_errors:
   label: 'Configuration for the "Form Get Errors" action'
   mapping:
     token_name:
-      type: required_label
+      type: eca.token_name.required
       label: 'Name of token'
 
 action.configuration.eca_form_set_action:
@@ -757,7 +760,8 @@ action.configuration.eca_form_set_method:
       type: string
       label: 'Method'
       constraints:
-        Choice:
-          - get
-          - post
+        EcaChoice:
+          choices:
+            - get
+            - post
         NotBlank: []

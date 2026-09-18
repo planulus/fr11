@@ -33,6 +33,11 @@ class EcaMigrateProcessEvent extends Event {
   protected string $destinationProperty;
 
   /**
+   * The migration plugin ID being run.
+   */
+  protected string $migrationId;
+
+  /**
    * Constructs an event.
    *
    * @param mixed $value
@@ -41,15 +46,19 @@ class EcaMigrateProcessEvent extends Event {
    *   The migration row being processed.
    * @param string $destination_property
    *   The migration destination property.
+   * @param string $migration_id
+   *   The migration plugin ID being run.
    */
   public function __construct(
     mixed $value,
     Row $row,
     string $destination_property,
+    string $migration_id = '',
   ) {
     $this->value = $value;
     $this->row = $row;
     $this->destinationProperty = $destination_property;
+    $this->migrationId = $migration_id;
   }
 
   /**
@@ -69,9 +78,16 @@ class EcaMigrateProcessEvent extends Event {
    *   Value to set.
    */
   public function setValue(mixed $value): void {
-    $this->value = ($value instanceof DataTransferObject)
-      ? $value->getValue()
-      : $value;
+    if ($value instanceof DataTransferObject) {
+      // A DTO with no properties only carries a scalar/string representation,
+      // so return that scalar directly. Any array of actual properties
+      // (indexed or associative, single or multiple elements) is returned
+      // unchanged.
+      $this->value = $value->count() ? $value->toArray() : $value->getValue();
+    }
+    else {
+      $this->value = $value;
+    }
   }
 
   /**
@@ -92,6 +108,16 @@ class EcaMigrateProcessEvent extends Event {
    */
   public function getDestinationProperty(): string {
     return $this->destinationProperty;
+  }
+
+  /**
+   * Returns the migration plugin ID being run.
+   *
+   * @return string
+   *   The migration plugin ID.
+   */
+  public function getMigrationId(): string {
+    return $this->migrationId;
   }
 
 }

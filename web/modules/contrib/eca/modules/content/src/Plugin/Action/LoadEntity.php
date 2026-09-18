@@ -144,7 +144,7 @@ class LoadEntity extends ConfigurableActionBase {
    *   When the provided argument is not NULL and not an entity object.
    */
   protected function doLoadEntity(?EntityInterface $entity = NULL): ?EntityInterface {
-    $this->entity = $this->entityLoader()->loadEntity($entity, $this->configuration);
+    $this->entity = $this->entityLoader()->loadEntity($entity, $this->configuration, $this->getPluginId());
     return $this->entity ?? NULL;
   }
 

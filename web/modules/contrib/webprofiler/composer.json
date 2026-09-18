@@ -22,7 +22,7 @@
         "league/commonmark": "~2.4",
         "nikic/php-parser": "^5.0 || ^4.18",
         "scrivo/highlight.php": "^9.18",
-        "symfony/stopwatch": "^6 || ^7",
+        "symfony/stopwatch": "^6 || ^7 || ^8",
         "symfony/var-dumper": "^6 || ^7"
     },
     "require-dev": {
@@ -36,7 +36,11 @@
         "phpstan/phpstan-phpunit": "1.4.x-dev",
         "phpstan/phpstan-strict-rules": "^1.5",
         "phpunit/phpunit": ">=9",
-        "previousnext/coding-standard": "^1.0"
+        "previousnext/coding-standard": "^1.0",
+        "symfony/messenger": "^6 || ^7"
+    },
+    "suggest": {
+        "symfony/messenger": "Enables the Messenger panel that collects messages dispatched through Symfony Messenger buses."
     },
     "config": {
         "allow-plugins": {

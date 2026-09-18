@@ -1,7 +1,7 @@
 # Plugin Managers
 
-The Modeler API defines five plugin managers. Two use PHP attribute-based
-discovery for code-heavy plugins; three use YAML-based discovery for
+The Modeler API defines six plugin managers. Two use PHP attribute-based
+discovery for code-heavy plugins; four use YAML-based discovery for
 declarative configuration.
 
 ## Attribute-based plugin managers
@@ -29,6 +29,7 @@ metadata that can be contributed by any module.
 | [Context](context/index.md) | `MODULE.modeler_api.contexts.yml` | Available components per use case | Defines plugin lists per component type |
 | [Plugin Dependency](plugin-dependency/index.md) | `MODULE.modeler_api.dependencies.yml` | Predecessor constraints | Restricts component ordering |
 | [Template Token](template-token/index.md) | `MODULE.modeler_api.template_tokens.yml` | Token trees for templates | Recursive key-value tokens |
+| [Theme](theme/index.md) | `MODULE.modeler_api.themes.yml` | Alternative styling for the modeler canvas | Asset libraries per owner/modeler combination |
 
 ## Alter hooks
 
@@ -42,6 +43,7 @@ plugin definitions at discovery time:
 | Context | `hook_modeler_api_context_info_alter()` |
 | Dependency | `hook_modeler_api_dependency_info_alter()` |
 | Template Token | `hook_modeler_api_template_token_info_alter()` |
+| Theme | `hook_modeler_api_theme_info_alter()` |
 
 ## Plugin relationship diagram
 
@@ -49,12 +51,14 @@ plugin definitions at discovery time:
 Context ----+
             |
 Dependency -+--> Model Owner <----> Modeler
-            |
-Template ---+
- Token
+            |                 ^
+Template ---+                 |
+ Token                        |
+                           Theme
 ```
 
-The three YAML-based plugin types always reference a specific Model Owner via
-their `model_owner` key. The Modeler, on the other hand, is Model Owner
+Context, Dependency and Template Token always reference a specific Model Owner
+via their `model_owner` key. The Modeler, on the other hand, is Model Owner
 agnostic -- it works with any Model Owner that it is paired with in the
-settings.
+settings. A Theme is attached to the pairing itself: it can restrict itself to
+a list of owners, a list of modelers, or both.

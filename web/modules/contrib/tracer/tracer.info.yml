@@ -2,11 +2,11 @@ name: Tracer
 type: module
 description: 'Alter core services to allow to trace them.'
 package: Development
-core_version_requirement: ^11
+core_version_requirement: ^11 || ^12
 tags:
   - developer
 
-# Information added by Drupal.org packaging script on 2026-02-03
-version: '1.2.2'
+# Information added by Drupal.org packaging script on 2026-08-11
+version: '1.3.0'
 project: 'tracer'
-datestamp: 1770134715
+datestamp: 1786440390

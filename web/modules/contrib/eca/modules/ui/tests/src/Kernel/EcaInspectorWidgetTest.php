@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\eca_ui\Kernel;
 
+use Drupal\Core\Render\HtmlResponse;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\eca\Entity\Eca;
@@ -9,6 +10,9 @@ use Drupal\node\Entity\Node;
 use Drupal\Tests\node\Traits\ContentTypeCreationTrait;
 use Drupal\user\Entity\User;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
@@ -26,6 +30,7 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
  */
 #[Group('eca')]
 #[Group('eca_ui')]
+#[RunTestsInSeparateProcesses]
 class EcaInspectorWidgetTest extends KernelTestBase {
 
   use ContentTypeCreationTrait;
@@ -107,11 +112,13 @@ class EcaInspectorWidgetTest extends KernelTestBase {
   /**
    * Invokes the response subscriber and returns the resulting response body.
    *
+   * @param \Symfony\Component\HttpFoundation\Response $response
+   *   The response passed to the subscriber.
+   *
    * @return string
    *   The rendered response content after the subscriber ran.
    */
-  protected function captureResponseContent(): string {
-    $response = new Response('<html><body><p>Page body.</p></body></html>');
+  protected function captureResponseContent(Response $response): string {
     $event = new ResponseEvent(
       $this->container->get('http_kernel'),
       Request::create('/'),
@@ -131,7 +138,7 @@ class EcaInspectorWidgetTest extends KernelTestBase {
    *   The permissions the current user should have.
    */
   protected function setCurrentUserWithPermissions(array $permissions): void {
-    $account = $this->createMock(AccountInterface::class);
+    $account = $this->createStub(AccountInterface::class);
     $account->method('hasPermission')->willReturnCallback(
       static fn (string $permission): bool => in_array($permission, $permissions, TRUE),
     );
@@ -143,7 +150,7 @@ class EcaInspectorWidgetTest extends KernelTestBase {
    */
   public function testWidgetHiddenWithoutPermission(): void {
     $this->setCurrentUserWithPermissions([]);
-    $content = $this->captureResponseContent();
+    $content = $this->captureResponseContent(new HtmlResponse('<html><body><p>Page body.</p></body></html>'));
     $this->assertStringNotContainsString('eca-inspector-applied-events', $content);
   }
 
@@ -152,7 +159,7 @@ class EcaInspectorWidgetTest extends KernelTestBase {
    */
   public function testWidgetForViewOnlyUserLinksToCanonicalRoute(): void {
     $this->setCurrentUserWithPermissions(['modeler api view eca']);
-    $content = $this->captureResponseContent();
+    $content = $this->captureResponseContent(new HtmlResponse('<html><body><p>Page body.</p></body></html>'));
     $this->assertStringContainsString('id="eca-inspector-applied-events"', $content);
     // The view-only link points at the canonical route: the model path without
     // the trailing "/edit" segment.
@@ -165,9 +172,88 @@ class EcaInspectorWidgetTest extends KernelTestBase {
    */
   public function testWidgetForEditUserLinksToEditForm(): void {
     $this->setCurrentUserWithPermissions(['modeler api edit eca']);
-    $content = $this->captureResponseContent();
+    $content = $this->captureResponseContent(new HtmlResponse('<html><body><p>Page body.</p></body></html>'));
     $this->assertStringContainsString('id="eca-inspector-applied-events"', $content);
     $this->assertStringContainsString('/' . self::ECA_ID . '/edit', $content);
+  }
+
+  /**
+   * HtmlResponse instances are recognized even without a Content-Type header.
+   */
+  public function testWidgetForHeaderlessHtmlResponse(): void {
+    $this->setCurrentUserWithPermissions(['modeler api view eca']);
+
+    $response = new HtmlResponse('<html><body><p>Page body.</p></body></html>');
+    $response->headers->remove('Content-Type');
+    $content = $this->captureResponseContent($response);
+
+    $this->assertStringContainsString('id="eca-inspector-applied-events"', $content);
+  }
+
+  /**
+   * Generic responses are excluded even when their Content-Type is HTML.
+   */
+  public function testWidgetSkippedForGenericHtmlResponse(): void {
+    $this->setCurrentUserWithPermissions(['modeler api view eca']);
+
+    $response = new Response('<html><body><p>Page body.</p></body></html>', 200, [
+      'Content-Type' => 'text/html; charset=UTF-8',
+    ]);
+    $expected = $response->getContent();
+    $content = $this->captureResponseContent($response);
+
+    $this->assertSame($expected, $content);
+    $this->assertStringNotContainsString('id="eca-inspector-applied-events"', $content);
+  }
+
+  /**
+   * JSON responses remain unchanged even if they contain "</body>".
+   */
+  public function testWidgetSkippedForJsonResponse(): void {
+    $this->setCurrentUserWithPermissions(['modeler api view eca']);
+
+    $response = new JsonResponse(['body' => '</body>']);
+    $expected = $response->getContent();
+    $content = $this->captureResponseContent($response);
+
+    $this->assertSame($expected, $content);
+    $this->assertStringNotContainsString('id="eca-inspector-applied-events"', $content);
+  }
+
+  /**
+   * JavaScript responses remain unchanged even if they contain "</body>".
+   */
+  public function testWidgetSkippedForJavaScriptResponse(): void {
+    $this->setCurrentUserWithPermissions(['modeler api view eca']);
+
+    $javascript = <<<'JS'
+window.addEventListener('load', () => {
+  const marker = "</body>";
+  console.log(marker);
+});
+JS;
+
+    $content = $this->captureResponseContent(new Response($javascript, 200, [
+      'Content-Type' => 'application/javascript; charset=UTF-8',
+    ]));
+
+    $this->assertStringContainsString('</body>', $content);
+    $this->assertStringNotContainsString('id="eca-inspector-applied-events"', $content);
+    $this->assertSame($javascript, $content);
+  }
+
+  /**
+   * Redirect responses are not page responses and remain unchanged.
+   */
+  public function testWidgetSkippedForRedirectResponse(): void {
+    $this->setCurrentUserWithPermissions(['modeler api view eca']);
+
+    $response = new RedirectResponse('/target');
+    $expected = $response->getContent();
+    $content = $this->captureResponseContent($response);
+
+    $this->assertSame($expected, $content);
+    $this->assertStringNotContainsString('id="eca-inspector-applied-events"', $content);
   }
 
 }

@@ -39,11 +39,12 @@ class HtmxRequestDataProvider implements DataProviderInterface {
       new Token(name: 'is_request', description: 'Whether the current request was sent by HTMX ("1" or "0").'),
       new Token(name: 'boosted', description: 'Whether the current request was boosted by HTMX ("1" or "0").'),
       new Token(name: 'history_restore', description: 'Whether the current request is for HTMX history restoration ("1" or "0").'),
-      new Token(name: 'target', description: 'The value of the HX-Target request header.'),
-      new Token(name: 'trigger', description: 'The value of the HX-Trigger request header.'),
-      new Token(name: 'trigger_name', description: 'The value of the HX-Trigger-Name request header.'),
-      new Token(name: 'current_url', description: 'The value of the HX-Current-URL request header.'),
-      new Token(name: 'prompt', description: 'The value of the HX-Prompt request header.'),
+      new Token(name: 'target', description: 'The identifier of the element the response is targeted at.'),
+      new Token(name: 'trigger', description: 'The identifier of the element that triggered the request. On Drupal 11 this is the element id, on Drupal 12 and later it is the CSS selector that htmx 4 sends. Prefer "trigger_name", which means the same thing on both.'),
+      new Token(name: 'trigger_name', description: 'The name attribute of the element that triggered the request, or empty if it has none. This has the same meaning on all supported Drupal versions.'),
+      new Token(name: 'source', description: 'The CSS selector of the element that triggered the request, for example button[name="first_item"]. Empty on Drupal 11, which does not send this information.'),
+      new Token(name: 'request_type', description: 'Whether the request targets a full page or a fragment: "full" or "partial". Empty on Drupal 11, which does not send this information.'),
+      new Token(name: 'current_url', description: 'The URL of the page the request was sent from.'),
     ],
   )]
   public function getData(string $key): mixed {
@@ -57,8 +58,9 @@ class HtmxRequestDataProvider implements DataProviderInterface {
       'target' => $this->htmxRequestInfo->target(),
       'trigger' => $this->htmxRequestInfo->trigger(),
       'trigger_name' => $this->htmxRequestInfo->triggerName(),
+      'source' => $this->htmxRequestInfo->source(),
+      'request_type' => $this->htmxRequestInfo->requestType(),
       'current_url' => $this->htmxRequestInfo->currentUrl(),
-      'prompt' => $this->htmxRequestInfo->prompt(),
     ]);
   }
 

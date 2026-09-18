@@ -4,7 +4,7 @@ namespace Drupal\eca\Plugin\Action;
 
 use Drupal\Component\Plugin\Derivative\DeriverBase;
 use Drupal\Component\Plugin\Exception\PluginNotFoundException;
-use Drupal\Core\Config\Entity\ConfigEntityStorageInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
 use Drupal\eca\PluginManager\Action;
@@ -16,11 +16,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 final class PreConfiguredActionDeriver extends DeriverBase implements ContainerDeriverInterface {
 
   /**
-   * The action entity storage.
+   * The entity type manager.
    *
-   * @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  protected ConfigEntityStorageInterface $actionEntityStorage;
+  protected EntityTypeManagerInterface $entityTypeManager;
 
   /**
    * This flag is used to prevent recursion within ::getDerivativeDefinitions().
@@ -48,7 +48,7 @@ final class PreConfiguredActionDeriver extends DeriverBase implements ContainerD
    */
   public static function create(ContainerInterface $container, $base_plugin_id): PreConfiguredActionDeriver {
     $instance = new self();
-    $instance->setActionEntityStorage($container->get('entity_type.manager')->getStorage('action'));
+    $instance->setEntityTypeManager($container->get('entity_type.manager'));
     $instance->setActionPluginManager($container->get('plugin.manager.eca.action'));
     $instance->setLogger($container->get('logger.channel.eca'));
     return $instance;
@@ -68,7 +68,7 @@ final class PreConfiguredActionDeriver extends DeriverBase implements ContainerD
     try {
       $this->derivatives = [];
       /** @var \Drupal\system\Entity\Action $action */
-      foreach ($this->actionEntityStorage->loadMultiple() as $action) {
+      foreach ($this->entityTypeManager->getStorage('action')->loadMultiple() as $action) {
         try {
           $pluginDefinition = $action->getPluginDefinition();
         }
@@ -104,13 +104,13 @@ final class PreConfiguredActionDeriver extends DeriverBase implements ContainerD
   }
 
   /**
-   * Set the action entity storage.
+   * Set the entity type manager.
    *
-   * @param \Drupal\Core\Config\Entity\ConfigEntityStorageInterface $storage
-   *   The action entity storage.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity type manager.
    */
-  public function setActionEntityStorage(ConfigEntityStorageInterface $storage): void {
-    $this->actionEntityStorage = $storage;
+  public function setEntityTypeManager(EntityTypeManagerInterface $entityTypeManager): void {
+    $this->entityTypeManager = $entityTypeManager;
   }
 
   /**

@@ -47,8 +47,8 @@ trait ErrorHandlerTrait {
       // ::resetExtendedErrorHandling() is called. PHPStan cannot model this
       // reference-by-closure mutation and emits a false positive for
       // booleanNot.alwaysFalse here. The suppression lives in the module's
-      // phpstan.neon, scoped to the consuming class against which PHPStan
-      // surfaces the error.
+      // phpstan.neon, scoped to this trait file (src/ErrorHandlerTrait.php)
+      // against which PHPStan surfaces the error.
       if (!$shutdownFunctionEnabled) {
         return;
       }

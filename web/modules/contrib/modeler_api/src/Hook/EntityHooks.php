@@ -2,6 +2,7 @@
 
 namespace Drupal\modeler_api\Hook;
 
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -83,12 +84,15 @@ class EntityHooks {
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity.
+   * @param \Drupal\Core\Cache\CacheableMetadata $cacheability
+   *   The cacheable metadata to add to if operations vary by or depend on
+   *   something.
    *
    * @return array
    *   An array of operations.
    */
   #[Hook('entity_operation')]
-  public function entityOperation(EntityInterface $entity): array {
+  public function entityOperation(EntityInterface $entity, CacheableMetadata $cacheability): array {
     $operations = [];
     $modelers = $this->modelerManager->getAllInstances();
     $numberOfModelers = count($modelers);
@@ -205,9 +209,12 @@ class EntityHooks {
    *   The operations array.
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity.
+   * @param \Drupal\Core\Cache\CacheableMetadata $cacheability
+   *   The cacheable metadata to add to if operations vary by or depend on
+   *   something.
    */
   #[Hook('entity_operation_alter')]
-  public function entityOperationAlter(array &$operations, EntityInterface $entity): void {
+  public function entityOperationAlter(array &$operations, EntityInterface $entity, CacheableMetadata $cacheability): void {
     if (!isset($operations['edit'])) {
       return;
     }

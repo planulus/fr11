@@ -8,6 +8,7 @@ use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Config\Entity\ConfigEntityStorageInterface;
 use Drupal\Core\DependencyInjection\ClassResolverInterface;
 use Drupal\Core\Entity\EntityLastInstalledSchemaRepositoryInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityViewBuilderInterface;
@@ -39,8 +40,6 @@ class EntityTypeManagerWrapper extends EntityTypeManager implements EntityTypeMa
    * The original entity type manager service.
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
-   *
-   * @phpstan-ignore-next-line
    */
   private EntityTypeManagerInterface $entityManager;
 
@@ -80,7 +79,15 @@ class EntityTypeManagerWrapper extends EntityTypeManager implements EntityTypeMa
     $this->setCacheBackend($cache, 'entity_type', ['entity_types']);
     $this->alterInfo('entity_type');
 
-    parent::__construct($namespaces, $module_handler, $cache, $string_translation, $class_resolver, $entity_last_installed_schema_repository, $container);
+    parent::__construct(
+      $namespaces,
+      $module_handler,
+      $cache,
+      $string_translation,
+      $class_resolver,
+      $entity_last_installed_schema_repository,
+      $container,
+    );
   }
 
   /**
@@ -88,7 +95,7 @@ class EntityTypeManagerWrapper extends EntityTypeManager implements EntityTypeMa
    */
   public function getStorage($entity_type_id) {
     /** @var \Drupal\Core\Entity\EntityStorageInterface $handler */
-    $handler = $this->getHandler($entity_type_id, 'storage');
+    $handler = $this->entityManager->getHandler($entity_type_id, 'storage');
     $entity_kind = ($handler instanceof ConfigEntityStorageInterface) ? 'config' : 'content';
 
     if (!isset($this->loaded[$entity_kind][$entity_type_id])) {
@@ -107,7 +114,7 @@ class EntityTypeManagerWrapper extends EntityTypeManager implements EntityTypeMa
    */
   public function getViewBuilder($entity_type_id) {
     /** @var \Drupal\Core\Entity\EntityViewBuilderInterface $handler */
-    $handler = $this->getHandler($entity_type_id, 'view_builder');
+    $handler = $this->entityManager->getHandler($entity_type_id, 'view_builder');
 
     if ($handler instanceof EntityViewBuilderInterface) {
       if (!isset($this->rendered[$entity_type_id])) {
@@ -123,6 +130,39 @@ class EntityTypeManagerWrapper extends EntityTypeManager implements EntityTypeMa
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function getHandler($entity_type_id, $handler_type) {
+    return $this->entityManager->getHandler($entity_type_id, $handler_type);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function createHandlerInstance(
+    $class,
+    ?EntityTypeInterface $definition = NULL,
+  ) {
+    return $this->entityManager->createHandlerInstance($class, $definition);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function clearCachedDefinitions() {
+    parent::clearCachedDefinitions();
+    $this->entityManager->clearCachedDefinitions();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function useCaches($use_caches = FALSE) {
+    parent::useCaches($use_caches);
+    $this->entityManager->useCaches($use_caches);
+  }
+
+  /**
    * Return loaded entities.
    *
    * @param string $entity_kind
@@ -133,7 +173,10 @@ class EntityTypeManagerWrapper extends EntityTypeManager implements EntityTypeMa
    * @return ConfigEntityStorageDecorator|null
    *   Loaded entities.
    */
-  public function getLoaded(string $entity_kind, string $entity_type): ConfigEntityStorageDecorator|NULL {
+  public function getLoaded(
+    string $entity_kind,
+    string $entity_type,
+  ): ConfigEntityStorageDecorator | null {
     return $this->loaded[$entity_kind][$entity_type] ?? NULL;
   }
 
@@ -146,7 +189,9 @@ class EntityTypeManagerWrapper extends EntityTypeManager implements EntityTypeMa
    * @return EntityViewBuilderDecorator|null
    *   Rendered entities.
    */
-  public function getRendered(string $entity_type): EntityViewBuilderDecorator|NULL {
+  public function getRendered(
+    string $entity_type,
+  ): EntityViewBuilderDecorator | null {
     return $this->rendered[$entity_type] ?? NULL;
   }
 
@@ -158,6 +203,18 @@ class EntityTypeManagerWrapper extends EntityTypeManager implements EntityTypeMa
    */
   public function __sleep(): array {
     return ['loaded', 'rendered'];
+  }
+
+  /**
+   * Restores the inner entity type manager after deserialization.
+   *
+   * The entity_type.manager service resolves to the live instance of this
+   * decorator, whose own inner service is set by the constructor, so
+   * delegating calls always end up on the undecorated entity type manager.
+   */
+  public function __wakeup(): void {
+    // @phpstan-ignore-next-line
+    $this->entityManager = \Drupal::entityTypeManager();
   }
 
   /**
@@ -178,11 +235,16 @@ class EntityTypeManagerWrapper extends EntityTypeManager implements EntityTypeMa
    * @return object
    *   A decorator for the storage handler.
    */
-  private function getStorageDecorator(string $entity_type, object $handler): object {
+  private function getStorageDecorator(
+    string $entity_type,
+    object $handler,
+  ): object {
     // Loaded this way to avoid circular references.
     /** @var \Drupal\webprofiler\DecoratorGeneratorInterface $decoratorGenerator */
     // @phpstan-ignore-next-line
-    $decoratorGenerator = \Drupal::service('webprofiler.config_entity_storage_decorator_generator');
+    $decoratorGenerator = \Drupal::service(
+      'webprofiler.config_entity_storage_decorator_generator',
+    );
 
     $decorators = $decoratorGenerator->getDecorators();
 

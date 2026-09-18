@@ -26,7 +26,7 @@ class Access extends ViewsBase implements AccessEventInterface {
   public AccountInterface $account;
 
   /**
-   * The access result.
+   * The access result accumulated from all reacting ECA models.
    *
    * @var \Drupal\Core\Access\AccessResultInterface|null
    */
@@ -54,9 +54,15 @@ class Access extends ViewsBase implements AccessEventInterface {
 
   /**
    * {@inheritdoc}
+   *
+   * The given result is being accumulated with the result of any ECA model
+   * that reacted upon this event before, using
+   * \Drupal\Core\Access\AccessResultInterface::orIf(). Consequently, access is
+   * being revoked as soon as at least one ECA model revokes it, regardless of
+   * the order in which the models are being executed.
    */
   public function setAccessResult(AccessResultInterface $result): Access {
-    $this->accessResult = $result;
+    $this->accessResult = $this->accessResult === NULL ? $result : $this->accessResult->orIf($result);
     return $this;
   }
 

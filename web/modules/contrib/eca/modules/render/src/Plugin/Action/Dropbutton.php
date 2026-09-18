@@ -56,7 +56,7 @@ class Dropbutton extends RenderElementActionBase {
     $result = parent::access($object, $account, TRUE);
     if ($result->isAllowed() && $this->configuration['use_yaml'] && $this->configuration['validate_yaml']) {
       try {
-        $this->yamlParser->parse($this->configuration['value']);
+        $this->yamlParser->parse($this->configuration['links']);
       }
       catch (ParseException) {
         $result = AccessResult::forbidden('YAML data is not valid.');
@@ -172,7 +172,7 @@ class Dropbutton extends RenderElementActionBase {
     $this->buildYamlFormFields(
       $form,
       $this->t('Interpret above specified links as YAML format'),
-      $this->t('Links can be specified as a list with YAML syntax. Example:<em><br/>-<br/>&nbsp;&nbsp;title: Edit<br/>&nbsp;&nbsp;url: "/node/[node:nid]/edit/"<br/>-<br>&nbsp;&nbsp;title: Delete<br/>&nbsp;&nbsp;url: "/node/[node:nid]/delete"</em><br/><br/>When using tokens and YAML altogether, make sure that tokens are wrapped as a string. Example: <em>title: "[node:title]"</em>'),
+      $this->t('Links can be specified as a list with YAML syntax. Example:<em><br />-<br />&nbsp;&nbsp;title: Edit<br />&nbsp;&nbsp;url: "/node/[node:nid]/edit/"<br />-<br />&nbsp;&nbsp;title: Delete<br />&nbsp;&nbsp;url: "/node/[node:nid]/delete"</em><br /><br />When using tokens and YAML altogether, make sure that tokens are wrapped as a string. Example: <em>title: "[node:title]"</em>'),
       -10,
     );
     return parent::buildConfigurationForm($form, $form_state);

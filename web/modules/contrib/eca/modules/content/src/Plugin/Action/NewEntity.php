@@ -94,7 +94,7 @@ class NewEntity extends ConfigurableActionBase {
       '#title' => $this->t('Type'),
       '#options' => $options,
       '#default_value' => $this->configuration['type'],
-      '#description' => $this->t('The type of the new entity.<br/>Note: to create a new user entity, enable the eca_user module and use the "User: create new" action from there.'),
+      '#description' => $this->t('The type of the new entity.<br />Note: to create a new user entity, enable the eca_user module and use the "User: create new" action from there.'),
       '#weight' => -50,
       '#eca_token_select_option' => TRUE,
     ];
@@ -118,6 +118,7 @@ class NewEntity extends ConfigurableActionBase {
       '#default_value' => $this->configuration['label'],
       '#description' => $this->t('The label of the new entity.'),
       '#weight' => -30,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['published'] = [
       '#type' => 'checkbox',
@@ -132,6 +133,7 @@ class NewEntity extends ConfigurableActionBase {
       '#default_value' => $this->configuration['owner'],
       '#description' => $this->t('The owner UID of the new entity.'),
       '#weight' => -10,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

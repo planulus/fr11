@@ -38,6 +38,7 @@ Before implementing any Modeler API plugin, ensure:
 | Curate component lists for a model owner | Context (YAML)        | [YAML Plugins](yaml-plugins.md#contexts)          |
 | Restrict component ordering              | Dependency (YAML)     | [YAML Plugins](yaml-plugins.md#dependencies)      |
 | Add template tokens                      | Template Token (YAML) | [YAML Plugins](yaml-plugins.md#template-tokens)   |
+| Change how the modeler canvas looks      | Theme (YAML)          | [YAML Plugins](yaml-plugins.md#themes)            |
 
 ## Existing implementations for reference
 

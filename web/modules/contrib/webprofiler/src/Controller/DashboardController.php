@@ -11,7 +11,6 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\webprofiler\DataCollector\HasPanelInterface;
 use Drupal\webprofiler\Profiler\TemplateManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\DataCollector\DataCollectorInterface;
 use Symfony\Component\HttpKernel\Profiler\Profiler;
 
@@ -63,16 +62,14 @@ class DashboardController extends ControllerBase {
   /**
    * Controller for the whole dashboard page.
    *
-   * @param \Symfony\Component\HttpFoundation\Request $request
-   *   A Request.
+   * @param string $token
+   *   The profiler token.
    *
    * @return array
    *   A render array for webprofiler_dashboard theme.
    */
-  public function dashboard(Request $request): array {
+  public function dashboard(string $token): array {
     $this->profiler->disable();
-
-    $token = $request->get('token');
 
     $profile = $this->profiler->loadProfile($token);
 

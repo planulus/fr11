@@ -41,13 +41,17 @@ abstract class ConfigActionBase extends ConfigurableActionBase {
 
   /**
    * {@inheritdoc}
+   *
+   * No cache metadata is attached, in line with every other ECA action.
+   *
+   * @see \Drupal\eca\Plugin\Action\ActionBase::access()
    */
   public function access($object, ?AccountInterface $account = NULL, $return_as_object = FALSE) {
     $account = $account ?: $this->currentUser;
     if ($account->hasPermission('administer site configuration')) {
-      return $return_as_object ? AccessResult::allowed()->cachePerPermissions() : TRUE;
+      return $return_as_object ? AccessResult::allowed() : TRUE;
     }
-    return $return_as_object ? AccessResult::forbidden()->cachePerPermissions() : FALSE;
+    return $return_as_object ? AccessResult::forbidden() : FALSE;
   }
 
   /**
@@ -71,6 +75,7 @@ abstract class ConfigActionBase extends ConfigurableActionBase {
       '#default_value' => $this->configuration['config_name'],
       '#required' => TRUE,
       '#weight' => -90,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['config_key'] = [
       '#type' => 'textfield',
@@ -78,6 +83,7 @@ abstract class ConfigActionBase extends ConfigurableActionBase {
       '#description' => $this->t('The config key, for example <em>page.front</em>. Leave empty to use the whole config.'),
       '#default_value' => $this->configuration['config_key'],
       '#weight' => -80,
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

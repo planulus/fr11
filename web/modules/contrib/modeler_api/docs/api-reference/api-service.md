@@ -123,10 +123,15 @@ Returns the resolved context list for a Model Owner via the
 Returns the merged dependency rules for a Model Owner via the
 `DependencyListBuilder`.
 
-### `getNestedDependencies(ModelOwnerInterface $owner, string $modelId): array`
+### `getNestedDependencies(array &$allDependencies, array $dependencies, bool $followRoles = TRUE): void`
 
-For models that contain subprocesses referencing other models, this method
-recursively collects dependency data from nested models.
+Recursively collects the config and module dependencies of the given
+dependency list into `$allDependencies`, reading each config object from
+active storage to follow its own dependencies. With `$followRoles` set to
+`FALSE`, a `user.role.*` object joins the list but its dependencies are not
+followed, since those come from the permissions the role carries on the
+current site. The recipe export uses this, because it only ensures a role
+exists and leaves its permissions to the model's config actions.
 
 ### `editUrl(string $type, string $id): Url`
 
@@ -199,6 +204,7 @@ attached to `drupalSettings.modeler_api`:
 | `template_tokens` | `object` | Resolved template token tree for the Model Owner |
 | `contexts` | `array` | Context list for the Model Owner |
 | `dependencies` | `array` | Dependency rules for the Model Owner |
+| `theme` | `string` | ID of the [theme](../plugin-managers/theme/index.md) attached for this owner/modeler combination, or `default` when none applies. Always the theme really in effect, so the `auto` setting is resolved before it reaches the client |
 | `readOnly` | `bool` | Whether the model is in read-only mode |
 | `isNew` | `bool` | Whether the model is new |
 | `mode` | `string` | Either `edit` or `view` |
@@ -229,6 +235,7 @@ The `Api` service receives the following dependencies via the service container:
 | Context plugin manager | `plugin.manager.modeler_api.context` |
 | Dependency plugin manager | `plugin.manager.modeler_api.dependency` |
 | Template token plugin manager | `plugin.manager.modeler_api.template_token` |
+| Theme plugin manager | `plugin.manager.modeler_api.theme` |
 | Context list builder | `modeler_api.context_list_builder` |
 | Dependency list builder | `modeler_api.dependency_list_builder` |
 | Template token list builder | `modeler_api.template_token_list_builder` |

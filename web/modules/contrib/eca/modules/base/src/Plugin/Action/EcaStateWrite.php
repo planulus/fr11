@@ -19,10 +19,10 @@ use Symfony\Component\Yaml\Exception\ParseException;
  */
 #[Action(
   id: 'eca_state_write',
-  label: new TranslatableMarkup('Persistent state: write'),
+  label: new TranslatableMarkup('ECA state: write'),
 )]
 #[EcaAction(
-  description: new TranslatableMarkup('Writes a value into the Drupal state system by the given key.'),
+  description: new TranslatableMarkup('Writes a value into ECA\'s own persistent key value store by the given key. This is not Drupal\'s state service; use <em>Key value store: write</em> with the collection "state" to write there.'),
   version_introduced: '1.1.0',
 )]
 class EcaStateWrite extends ConfigurableActionBase {
@@ -109,7 +109,7 @@ class EcaStateWrite extends ConfigurableActionBase {
       '#title' => $this->t('State key'),
       '#default_value' => $this->configuration['key'],
       '#weight' => -30,
-      '#description' => $this->t('The key of the Drupal state.'),
+      '#description' => $this->t("The key of the value in ECA's key value store."),
       '#eca_token_replacement' => TRUE,
     ];
     $form['value'] = [
@@ -117,7 +117,7 @@ class EcaStateWrite extends ConfigurableActionBase {
       '#title' => $this->t('The value of the state'),
       '#default_value' => $this->configuration['value'],
       '#weight' => -20,
-      '#description' => $this->t('The key, where the value is stored into.'),
+      '#description' => $this->t('The value that gets stored under the given key.'),
       '#eca_token_replacement' => TRUE,
     ];
     $this->buildYamlFormFields(

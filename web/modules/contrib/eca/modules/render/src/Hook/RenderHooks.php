@@ -3,6 +3,7 @@
 namespace Drupal\eca_render\Hook;
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Cache\RefinableCacheableDependencyInterface;
 use Drupal\Core\Entity\ContentEntityFormInterface;
 use Drupal\Core\Entity\Display\EntityDisplayInterface;
@@ -14,6 +15,7 @@ use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Hook\Attribute\Hook;
 use Drupal\Core\Logger\LoggerChannelInterface;
+use Drupal\Core\Render\Element;
 use Drupal\Core\State\StateInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Url;
@@ -106,7 +108,12 @@ class RenderHooks {
    * Implements hook_entity_operation().
    */
   #[Hook('entity_operation')]
-  public function entityOperation(EntityInterface $entity): array {
+  public function entityOperation(EntityInterface $entity, CacheableMetadata $cacheability): array {
+    // ECA dispatches an event and builds operation links dynamically, so it
+    // cannot statically determine cacheability. Mark the result uncacheable to
+    // preserve the prior behavior where core did not receive cacheability
+    // information from this hook.
+    $cacheability->setCacheMaxAge(0);
     $build = [];
     $event = $this->triggerEvent->dispatchFromPlugin('eca_render:entity_operations', $entity, $build);
     if ($event instanceof RenderEventInterface) {
@@ -418,15 +425,54 @@ class RenderHooks {
       if ($event instanceof RenderEventInterface) {
         $render_build = &$event->getRenderArray();
       }
-      $build[$name] = $render_build;
-      if (!empty($build[$name]) && ($display_type === 'form') && !isset($build[$name]['#type'])) {
-        // Wrap as container so that the extra field can be grouped.
-        $build[$name]['#type'] = 'container';
+      if (!empty($render_build)) {
+        $build[$name] = $render_build;
+      }
+      if (isset($build[$name])) {
+        // A build that only carries properties (e.g. #cache metadata) but has
+        // no renderable content produces no output. Exposing it as a field
+        // would make grouping modules like field_group treat the field - and
+        // any group wrapping it - as non-empty, resulting in empty wrappers in
+        // the output. Mark such an element as inaccessible so it renders
+        // nothing and is treated as empty, while keeping it in the build so its
+        // cache metadata still bubbles up.
+        if (!$this->hasRenderableContent($build[$name])) {
+          $build[$name]['#access'] = FALSE;
+        }
+        elseif (($display_type === 'form') && !isset($build[$name]['#type'])) {
+          // Wrap as container so that the extra field can be grouped.
+          $build[$name]['#type'] = 'container';
+        }
       }
       if (!isset($build['#weight']) && isset($options['weight'])) {
         $build['#weight'] = $options['weight'];
       }
     }
+  }
+
+  /**
+   * Determines whether a render array produces renderable content.
+   *
+   * A render array that only carries properties (keys prefixed with "#", such
+   * as "#cache") but has no visible children and no renderable element does not
+   * produce any output. A render array is considered renderable when it has at
+   * least one visible child, or carries a "#type" or "#theme" property, or
+   * carries non-empty "#markup".
+   *
+   * @param array $build
+   *   The render array to check.
+   *
+   * @return bool
+   *   TRUE if the render array produces renderable content, FALSE otherwise.
+   */
+  protected function hasRenderableContent(array $build): bool {
+    if (Element::getVisibleChildren($build) !== []) {
+      return TRUE;
+    }
+    if (isset($build['#type']) || isset($build['#theme'])) {
+      return TRUE;
+    }
+    return isset($build['#markup']) && trim((string) $build['#markup']) !== '';
   }
 
 }

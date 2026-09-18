@@ -33,6 +33,7 @@ class ViewsQueryTest extends KernelTestBase {
     'user',
     'field',
     'text',
+    'filter',
     'language',
     'content_translation',
     'node',

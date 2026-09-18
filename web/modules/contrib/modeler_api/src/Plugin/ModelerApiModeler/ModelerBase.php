@@ -2,6 +2,7 @@
 
 namespace Drupal\modeler_api\Plugin\ModelerApiModeler;
 
+use Drupal\Component\Serialization\Yaml;
 use Drupal\Component\Utility\Random;
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\Ajax\AjaxResponse;
@@ -130,6 +131,13 @@ abstract class ModelerBase extends PluginBase implements ModelerInterface {
   /**
    * {@inheritdoc}
    */
+  public function export(ModelOwnerInterface $owner, ConfigEntityInterface $model): ?string {
+    return NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function prepareEmptyModelData(string &$id): string {
     return '';
   }
@@ -215,6 +223,41 @@ abstract class ModelerBase extends PluginBase implements ModelerInterface {
   /**
    * {@inheritdoc}
    */
+  public function getSummary(): ?string {
+    return NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getRecipes(): ?array {
+    return NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getConfigActions(): ?array {
+    return NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getExportConfig(): ?array {
+    return NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getModules(): ?array {
+    return NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getStatus(): bool {
     return TRUE;
   }
@@ -277,11 +320,6 @@ abstract class ModelerBase extends PluginBase implements ModelerInterface {
         'label' => $this->t('Model ID'),
       ],
     ];
-    $form['version'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Version'),
-      '#default_value' => $config['version'],
-    ];
     if ($owner->supportsStatus()) {
       $form['executable'] = [
         '#type' => 'checkbox',
@@ -297,18 +335,6 @@ abstract class ModelerBase extends PluginBase implements ModelerInterface {
         '#default_value' => $config['template'],
       ];
     }
-    $form['storage'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Storage of raw data'),
-      '#default_value' => $config['storage'] ?? '',
-      '#options' => [
-        '' => $this->t('Default'),
-        Settings::STORAGE_OPTION_NONE => $this->t('Do not store raw model data'),
-        Settings::STORAGE_OPTION_SEPARATE => $this->t('Store raw data in separate config entity'),
-        Settings::STORAGE_OPTION_THIRD_PARTY => $this->t('Store raw data with config as third-party setting'),
-      ],
-      '#disabled' => $owner->enforceDefaultStorageMethod(),
-    ];
     $form['documentation'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Documentation'),
@@ -320,11 +346,79 @@ abstract class ModelerBase extends PluginBase implements ModelerInterface {
       '#default_value' => $config['tags'],
       '#description' => $this->t('Comma-separated list of tags.'),
     ];
-    $form['changelog'] = [
+
+    // The recipe export fields only matter when the model gets exported, so
+    // they are grouped away from the fields that every model needs. The group
+    // deliberately does not set #tree: the values have to stay flat, as
+    // modelers bind their inputs by the flat name attribute.
+    $form['recipe_export'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Recipe export'),
+      '#open' => FALSE,
+    ];
+    $form['recipe_export']['summary'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Summary'),
+      '#default_value' => $config['summary'] ?? '',
+      '#maxlength' => 255,
+      '#description' => $this->t('A one-line description of this model, used as the description of a recipe exported from it. Leave empty to derive it from the leading paragraph of the documentation.'),
+    ];
+    $form['recipe_export']['recipes'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Included recipes'),
+      '#default_value' => implode("\n", $config['recipes'] ?? []),
+      '#description' => $this->t('Recipes that an exported recipe includes, one per line, for example core/recipes/article_tags.'),
+    ];
+    $form['recipe_export']['export_config'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Additional config to export'),
+      '#default_value' => implode("\n", $config['export_config'] ?? []),
+      '#description' => $this->t('Names of config objects to ship with an exported recipe in addition to those the model depends on, one per line. The config data itself is always read from the active configuration.'),
+    ];
+    $form['recipe_export']['modules'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Additional required modules'),
+      '#default_value' => implode("\n", $config['modules'] ?? []),
+      '#description' => $this->t('Machine names of modules an exported recipe requires in addition to those the model depends on, one per line. Use this for a module the model needs but Drupal cannot derive, such as one that only contributes a YAML file another module discovers.'),
+    ];
+    $form['recipe_export']['config_actions'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Config actions'),
+      '#default_value' => $config['config_actions'] ? Yaml::encode($config['config_actions']) : '',
+      '#description' => $this->t('Config actions for an exported recipe as YAML: a list of entries, each with a "config" key holding the config name and an "actions" key holding the actions for it. They are applied in addition to the user role actions that the export derives from the model.'),
+    ];
+
+    // Fields that are rarely touched once a model exists. Just like the recipe
+    // export group, this must not set #tree.
+    $form['advanced'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Advanced'),
+      '#open' => FALSE,
+    ];
+    $form['advanced']['version'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Version'),
+      '#default_value' => $config['version'],
+    ];
+    $form['advanced']['storage'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Storage of raw data'),
+      '#default_value' => $config['storage'] ?? '',
+      '#options' => [
+        '' => $this->t('Default'),
+        Settings::STORAGE_OPTION_NONE => $this->t('Do not store raw model data'),
+        Settings::STORAGE_OPTION_SEPARATE => $this->t('Store raw data in separate config entity'),
+        Settings::STORAGE_OPTION_THIRD_PARTY => $this->t('Store raw data with config as third-party setting'),
+      ],
+      '#description' => $this->t("Controls if and how the modeler's raw data (canvas layout and positioning) is being stored. This has no impact on the functionality of the current model. If the modeler's raw data is not stored, the canvas layout will be laid out automatically next time it gets loaded. If the raw data is stored with config, it makes that config entity slightly bigger, but everything is self-contained. Alternatively, the raw data can be stored in a separate config entity to keep the functional config small but keep the canvas layout around. The default uses the system setting for raw modeler data."),
+      '#disabled' => $owner->enforceDefaultStorageMethod(),
+    ];
+    $form['advanced']['changelog'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Changelog'),
       '#default_value' => $config['changelog'],
     ];
+
     $owner->modelConfigFormAlter($form);
     return $form;
   }

@@ -20,6 +20,10 @@
         <span>{{ collector.roles|join(', ') }}</span>
       </div>
       <div class="sf-toolbar-info-piece">
+        <b>{{ 'Permissions'|t }}</b>
+        <span>{{ collector.getPermissionsCount }}</span>
+      </div>
+      <div class="sf-toolbar-info-piece">
         <b>{{ 'Authenticated by'|t }}</b>
         <span>{{ collector.provider }}</span>
       </div>
@@ -30,5 +34,9 @@
     {% endif %}
   {% endset %}
 
-  {{ include('@webprofiler/Profiler/toolbar_item.html.twig', { link: false }) }}
+  {{ include('@webprofiler/Profiler/toolbar_item.html.twig', { link: profiler_url }) }}
+{% endblock %}
+
+{% block panel %}
+  {{ collector.panel() }}
 {% endblock %}

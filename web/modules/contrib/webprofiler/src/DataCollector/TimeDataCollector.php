@@ -12,7 +12,9 @@ use Symfony\Component\HttpKernel\DataCollector\LateDataCollectorInterface;
 /**
  * Collects timed events data.
  */
-class TimeDataCollector extends DataCollector implements LateDataCollectorInterface {
+class TimeDataCollector extends DataCollector implements HasPanelInterface, LateDataCollectorInterface {
+
+  use PanelTrait;
 
   /**
    * TimeDataCollector constructor.
@@ -120,6 +122,39 @@ class TimeDataCollector extends DataCollector implements LateDataCollectorInterf
    */
   public function getStartTime(): float {
     return $this->data['start_time'];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getPanel(): array {
+    $rows = [
+      [
+        $this->t('Total time'),
+        $this->renderTime($this->getDuration()),
+      ],
+      [
+        $this->t('Initialization time'),
+        $this->renderTime($this->getInitTime()),
+      ],
+    ];
+
+    return [
+      '#theme' => 'webprofiler_dashboard_section',
+      '#data' => [
+        '#type' => 'table',
+        '#header' => [
+          $this->t('Metric'),
+          $this->t('Value'),
+        ],
+        '#rows' => $rows,
+        '#attributes' => [
+          'class' => [
+            'webprofiler__table',
+          ],
+        ],
+      ],
+    ];
   }
 
 }

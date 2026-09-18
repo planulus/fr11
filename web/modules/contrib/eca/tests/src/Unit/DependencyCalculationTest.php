@@ -3,6 +3,7 @@
 namespace Drupal\Tests\eca\Unit;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Config\Entity\ConfigEntityTypeInterface;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
@@ -216,6 +217,74 @@ class DependencyCalculationTest extends EcaUnitTestBase {
 
     $this->assertArrayHasKey('config', $dependencies, 'Dependencies should include config entries for type field.');
     $this->assertContains('node.type.page', $dependencies['config'], 'The bundle config dependency for node.type.page should be detected.');
+  }
+
+  /**
+   * Tests bundle dependency calculation when the bundle does not exist yet.
+   *
+   * When an ECA config entity is saved before the bundle config entity it
+   * refers to exists (e.g. during a recipe apply or config import, where
+   * install order may put the ECA config first), the dependency must still
+   * be calculated from the bundle entity type's config prefix instead of
+   * calling EntityType::getBundleConfigDependency(), which throws a
+   * LogicException for a missing bundle entity.
+   */
+  public function testBundleDependencyForNotYetExistingBundle(): void {
+    // Set up the token service to map 'node' to 'node' entity type.
+    $this->token->method('getEntityTypeForTokenType')
+      ->willReturnCallback(function (string $token_type): ?string {
+        return $token_type === 'node' ? 'node' : NULL;
+      });
+
+    // The 'node' entity type declares 'node_type' as its bundle entity type.
+    // Mimic core behavior: resolving the bundle config dependency through
+    // the entity type hard-fails, because the bundle entity does not exist.
+    $entityType = $this->createStub(EntityTypeInterface::class);
+    $entityType->method('getBundleEntityType')
+      ->willReturn('node_type');
+    $entityType->method('getBundleConfigDependency')
+      ->willThrowException(new \LogicException('Missing bundle entity, entity type node_type, entity id article.'));
+    $entityType->method('entityClassImplements')
+      ->willReturn(TRUE);
+
+    // The bundle entity type is a config entity type with a config prefix.
+    $bundleEntityType = $this->createStub(ConfigEntityTypeInterface::class);
+    $bundleEntityType->method('getConfigPrefix')
+      ->willReturn('node.type');
+
+    $this->entityTypeManager->method('hasDefinition')
+      ->willReturnCallback(function (string $entity_type_id): bool {
+        return $entity_type_id === 'node';
+      });
+    $this->entityTypeManager->method('getDefinition')
+      ->willReturnCallback(function (string $entity_type_id) use ($entityType, $bundleEntityType): EntityTypeInterface {
+        return $entity_type_id === 'node_type' ? $bundleEntityType : $entityType;
+      });
+    $this->entityFieldManager->method('getFieldStorageDefinitions')
+      ->willReturn([]);
+
+    // Create a stub ECA entity referencing the not-yet-existing bundle.
+    $eca = $this->createStub(Eca::class);
+    $eca->method('get')
+      ->willReturnCallback(function (string $property): mixed {
+        if ($property === 'events') {
+          return [
+            'event_1' => [
+              'plugin' => 'some_event',
+              'configuration' => [
+                'type' => 'node article',
+              ],
+              'successors' => [],
+            ],
+          ];
+        }
+        return [];
+      });
+
+    $dependencies = $this->dependencyCalculation->calculateDependencies($eca);
+
+    $this->assertArrayHasKey('config', $dependencies, 'Dependencies should include config entries even when the bundle entity does not exist yet.');
+    $this->assertContains('node.type.article', $dependencies['config'], 'The bundle config dependency must be derived from the config prefix of the bundle entity type.');
   }
 
   /**

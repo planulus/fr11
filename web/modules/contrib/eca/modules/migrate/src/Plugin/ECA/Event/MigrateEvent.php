@@ -5,6 +5,7 @@ namespace Drupal\eca_migrate\Plugin\ECA\Event;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\eca\Attribute\EcaEvent;
 use Drupal\eca\Attribute\Token;
+use Drupal\eca\Entity\Objects\EcaEvent as EcaEventObject;
 use Drupal\eca\Plugin\CleanupInterface;
 use Drupal\eca\Plugin\DataType\DataTransferObject;
 use Drupal\eca\Plugin\ECA\Event\EventBase;
@@ -19,6 +20,9 @@ use Drupal\migrate\Event\MigratePostRowSaveEvent;
 use Drupal\migrate\Event\MigratePreRowSaveEvent;
 use Drupal\migrate\Event\MigrateRollbackEvent;
 use Drupal\migrate\Event\MigrateRowDeleteEvent;
+use Drupal\migrate\Plugin\MigrationPluginManagerInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Contracts\EventDispatcher\Event;
 
 /**
  * Plugin implementation of the ECA Events for migrate.
@@ -29,6 +33,24 @@ use Drupal\migrate\Event\MigrateRowDeleteEvent;
   version_introduced: '1.0.0',
 )]
 class MigrateEvent extends EventBase implements CleanupInterface {
+
+  /**
+   * The migration plugin manager.
+   *
+   * @var \Drupal\migrate\Plugin\MigrationPluginManagerInterface|null
+   */
+  protected ?MigrationPluginManagerInterface $migrationPluginManager = NULL;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static {
+    $instance = parent::create($container, $configuration, $plugin_id, $plugin_definition);
+    if ($container->has('plugin.manager.migration')) {
+      $instance->migrationPluginManager = $container->get('plugin.manager.migration');
+    }
+    return $instance;
+  }
 
   /**
    * {@inheritdoc}
@@ -106,6 +128,8 @@ class MigrateEvent extends EventBase implements CleanupInterface {
 
     if ($this->pluginId === 'migrate:process') {
       $configuration['token_name'] = '';
+      $configuration['migration_id'] = '';
+      $configuration['destination_property'] = '';
     }
 
     return $configuration;
@@ -126,6 +150,21 @@ class MigrateEvent extends EventBase implements CleanupInterface {
         '#required' => TRUE,
         '#eca_token_reference' => TRUE,
       ];
+
+      $form['migration_id'] = [
+        '#type' => 'select',
+        '#title' => $this->t('Restrict by migration'),
+        '#options' => ['' => $this->t('- Any migration -')] + $this->getMigrationOptions(),
+        '#default_value' => $this->configuration['migration_id'],
+        '#description' => $this->t('Optionally restrict this event to a single migration. Leave any to react on all migrations.'),
+      ];
+
+      $form['destination_property'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('Restrict by destination property'),
+        '#default_value' => $this->configuration['destination_property'],
+        '#description' => $this->t('Optionally restrict this event to a single destination property. Leave empty to react on all destination properties. Tokens are not supported.'),
+      ];
     }
 
     return $form;
@@ -138,7 +177,77 @@ class MigrateEvent extends EventBase implements CleanupInterface {
     parent::submitConfigurationForm($form, $form_state);
     if ($this->pluginId === 'migrate:process') {
       $this->configuration['token_name'] = $form_state->getValue('token_name');
+      $this->configuration['migration_id'] = $form_state->getValue('migration_id');
+      $this->configuration['destination_property'] = $form_state->getValue('destination_property');
     }
+  }
+
+  /**
+   * Builds the list of available migrations for the restriction select.
+   *
+   * @return array
+   *   An associative array of migration labels, keyed by migration plugin ID
+   *   and sorted by label.
+   */
+  protected function getMigrationOptions(): array {
+    $options = [];
+
+    if ($this->migrationPluginManager === NULL) {
+      return $options;
+    }
+
+    foreach ($this->migrationPluginManager->getDefinitions() as $id => $definition) {
+      $label = (string) ($definition['label'] ?? '');
+      $options[$id] = ($label !== '' && $label !== $id) ? sprintf('%s (%s)', $label, $id) : $id;
+    }
+
+    natcasesort($options);
+
+    return $options;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function generateWildcard(string $eca_config_id, EcaEventObject $ecaEvent): string {
+    if ($this->pluginId !== 'migrate:process') {
+      return parent::generateWildcard($eca_config_id, $ecaEvent);
+    }
+
+    $configuration = $ecaEvent->getConfiguration();
+
+    $migration_id = isset($configuration['migration_id']) ? trim((string) $configuration['migration_id']) : '';
+    if ($migration_id === '') {
+      $migration_id = '*';
+    }
+
+    $destination_property = isset($configuration['destination_property']) ? trim((string) $configuration['destination_property']) : '';
+    if ($destination_property === '') {
+      $destination_property = '*';
+    }
+
+    return $migration_id . '::' . $destination_property;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function appliesForWildcard(Event $event, string $event_name, string $wildcard): bool {
+    if (!($event instanceof EcaMigrateProcessEvent)) {
+      return TRUE;
+    }
+
+    [$migration_id, $destination_property] = explode('::', $wildcard);
+
+    if ($migration_id !== '*' && $event->getMigrationId() !== $migration_id) {
+      return FALSE;
+    }
+
+    if ($destination_property !== '*' && $event->getDestinationProperty() !== $destination_property) {
+      return FALSE;
+    }
+
+    return TRUE;
   }
 
   /**
@@ -164,6 +273,7 @@ class MigrateEvent extends EventBase implements CleanupInterface {
       MigrateRollbackEvent::class,
       MigrateRowDeleteEvent::class,
       MigrateIdMapMessageEvent::class,
+      EcaMigrateProcessEvent::class,
     ]
   )]
   #[Token(
@@ -268,6 +378,9 @@ class MigrateEvent extends EventBase implements CleanupInterface {
         ) {
           $migration = $event->getMigration();
           return $migration->id();
+        }
+        if ($event instanceof EcaMigrateProcessEvent) {
+          return $event->getMigrationId();
         }
         break;
 

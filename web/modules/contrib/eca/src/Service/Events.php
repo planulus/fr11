@@ -2,7 +2,6 @@
 
 namespace Drupal\eca\Service;
 
-use Drupal\Component\Plugin\Exception\PluginException;
 use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\eca\ErrorHandlerTrait;
@@ -61,23 +60,35 @@ class Events {
    *   The sorted list of events.
    */
   public function events(): array {
-    static $events;
+    $events = &drupal_static('eca_events');
     if ($events === NULL) {
       $this->enableExtendedErrorHandling('Collecting all available events');
-      $events = [];
-      foreach ($this->eventManager->getDefinitions() as $plugin_id => $definition) {
-        try {
-          /** @var \Drupal\eca\Plugin\ECA\Event\EventInterface $plugin */
-          $plugin = $this->eventManager->createInstance($plugin_id);
-          $events[] = $plugin;
-        }
-        // @phpstan-ignore catch.neverThrown
-        catch (PluginException | \Throwable) {
-          // Can be ignored.
+      // Collect into a local list rather than into the static cache slot.
+      // ::drupal_static() hands out a reference, so populating the slot in
+      // place would publish a partial, unsorted list the moment a throwable
+      // escapes the loop below. Every later call in the request would then
+      // find a non-NULL cache, skip re-collection and silently return that
+      // incomplete list, which makes real plugins look like plugins that do
+      // not exist. Publishing only after sorting succeeded keeps the cache
+      // NULL on failure, so the next caller retries and either succeeds or
+      // throws again.
+      $collected = [];
+      try {
+        foreach ($this->eventManager->getDefinitions() as $plugin_id => $definition) {
+          if ($plugin = $this->createInstance($plugin_id)) {
+            $collected[] = $plugin;
+          }
         }
       }
-      $this->resetExtendedErrorHandling();
-      $this->sortPlugins($events, $this->extensionManager);
+      finally {
+        // Without this, a throwable from anywhere inside the loop - including
+        // the ::getDefinitions() call itself - would leave error reporting
+        // suppressed and the echoing shutdown function armed for the rest of
+        // the request.
+        $this->resetExtendedErrorHandling();
+      }
+      $this->sortPlugins($collected, $this->extensionManager);
+      $events = $collected;
     }
     return $events;
   }

@@ -1,0 +1,29 @@
+{% block toolbar %}
+  {% if collector.messages|length > 0 %}
+    {% set status_color = collector.exceptionsCount ? 'red' %}
+    {% set icon %}
+      {{ source('@webprofiler/Icon/messenger.svg') }}
+      <span class="sf-toolbar-value">{{ collector.messages|length }}</span>
+    {% endset %}
+
+    {% set text %}
+      {% for bus in collector.buses %}
+        {% set exceptionsCount = collector.exceptionsCount(bus) %}
+        <div class="sf-toolbar-info-piece">
+          <b>{{ bus }}</b>
+          <span
+            title="{{ exceptionsCount }} message(s) with exceptions"
+            class="sf-toolbar-status sf-toolbar-status-{{ exceptionsCount ? 'red' }}">
+              {{ collector.messages(bus)|length }}
+          </span>
+        </div>
+      {% endfor %}
+    {% endset %}
+
+    {{ include('@webprofiler/Profiler/toolbar_item.html.twig', { link: 'messenger', status: status_color }) }}
+  {% endif %}
+{% endblock %}
+
+{% block panel %}
+  {{ collector.panel() }}
+{% endblock %}

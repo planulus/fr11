@@ -676,7 +676,22 @@ div.sf-toolbar  .sf-toolbar-block .sf-toolbar-info-piece.sf-toolbar-info-php-ext
   }
 }
 
-/* Add some margin to toolbar footer */
-#admin-toolbar #menu-footer {
+/* Fix position of AI chat and navigation sidebar when the toolbar is open */
+.webprofiler-open #admin-toolbar #menu-footer {
   margin-bottom: 36px;
+}
+
+.webprofiler-open .ai-deepchat.chat-container {
+  right: 0;
+  bottom: 36px;
+}
+
+.webprofiler-closed .ai-deepchat.chat-container.bottom-right {
+  right: 50px;
+}
+
+@media (max-width: 768px) {
+  .webprofiler-closed .ai-deepchat.chat-container {
+    width: 90%;
+  }
 }

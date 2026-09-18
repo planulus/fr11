@@ -41,6 +41,19 @@ class WebprofilerServiceProvider extends ServiceProviderBase {
         ]);
     }
 
+    // Add AiDataCollector only if AI module is enabled.
+    if (isset($modules['ai'])) {
+      $container->register('webprofiler.ai',
+        'Drupal\webprofiler\DataCollector\AiDataCollector')
+        ->addTag('event_subscriber')
+        ->addTag('data_collector', [
+          'template' => '@webprofiler/Collector/ai.html.twig',
+          'id' => 'ai',
+          'label' => 'AI',
+          'priority' => 475,
+        ]);
+    }
+
     // Add ViewsDataCollector only if Views module is enabled.
     if (isset($modules['views'])) {
       $container->register('webprofiler.views', 'Drupal\webprofiler\DataCollector\ViewsDataCollector')
@@ -54,14 +67,30 @@ class WebprofilerServiceProvider extends ServiceProviderBase {
         ]);
     }
 
+    // Add LogsDataCollector only if Monolog module is enabled.
     if (isset($modules['monolog'])) {
       $container->register('webprofiler.logs', 'Drupal\webprofiler\DataCollector\LogsDataCollector')
         ->addArgument(new Reference('logger.channel.debug'))
+        ->addArgument(new Reference('logger.log_message_parser'))
         ->addTag('data_collector', [
           'template' => '@webprofiler/Collector/logs.html.twig',
           'id' => 'logs',
           'label' => 'Logs',
           'priority' => 25,
+        ]);
+    }
+
+    // Add MessengerDataCollector only if Symfony Messenger module is enabled.
+    if (isset($modules['sm'])) {
+      // This service is called 'data_collector.messenger' to leverage the
+      // existing Symfony Messenger compiler pass.
+      // @see \Symfony\Component\Messenger\DependencyInjection\MessengerPass::registerBusToCollector()
+      $container->register('data_collector.messenger', 'Drupal\webprofiler\DataCollector\MessengerDataCollector')
+        ->addTag('data_collector', [
+          'template' => '@webprofiler/Collector/messenger.html.twig',
+          'id' => 'messenger',
+          'label' => 'Messenger',
+          'priority' => 600,
         ]);
     }
 
@@ -82,6 +111,13 @@ class WebprofilerServiceProvider extends ServiceProviderBase {
           'priority' => 100,
         ]);
     }
+
+    // Decorate the access policy processor to collect checked permissions.
+    $container->register('webprofiler.debug.access_policy_processor', 'Drupal\webprofiler\Access\AccessPolicyProcessorWrapper')
+      ->addArgument(new Reference('webprofiler.debug.access_policy_processor.inner'))
+      ->addArgument(new Reference('webprofiler.user'))
+      ->setDecoratedService('access_policy_processor')
+      ->setPublic(FALSE);
   }
 
   /**

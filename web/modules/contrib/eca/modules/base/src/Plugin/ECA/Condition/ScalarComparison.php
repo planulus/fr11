@@ -52,6 +52,7 @@ class ScalarComparison extends StringComparisonBase {
       '#default_value' => $this->configuration['left'],
       '#weight' => -90,
       '#description' => $this->t('The first value to be compared.'),
+      '#eca_token_replacement' => TRUE,
     ];
     $form['right'] = [
       '#type' => 'textarea',
@@ -59,6 +60,7 @@ class ScalarComparison extends StringComparisonBase {
       '#default_value' => $this->configuration['right'],
       '#weight' => -70,
       '#description' => $this->t('The second value to be compared.'),
+      '#eca_token_replacement' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

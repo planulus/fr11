@@ -182,6 +182,22 @@ trait FormFieldPluginTrait {
   }
 
   /**
+   * Normalizes a field name that uses "." or ":" as nested separators.
+   *
+   * This matches the separator support of getTargetElement() and
+   * getSubmittedValue(), which both replace "." and ":" with "][".
+   *
+   * @param string $field_name
+   *   The field name to normalize.
+   *
+   * @return string
+   *   The normalized field name.
+   */
+  protected function normalizeFieldName(string $field_name): string {
+    return str_replace([':', '.'], '][', $field_name);
+  }
+
+  /**
    * Get the targeted form element specified by the configured form field name.
    *
    * @return array|null

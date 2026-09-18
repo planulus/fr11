@@ -7,6 +7,7 @@ use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Ajax\AjaxHelperTrait;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\MessageCommand;
+use Drupal\Core\Cache\RefinableCacheableDependencyInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\EventSubscriber\MainContentViewSubscriber;
@@ -258,14 +259,32 @@ final class EndpointController {
     if ($route && ($route->getDefault('_controller') === 'Drupal\eca_endpoint\Controller\EndpointController::handle')) {
       $given_arguments = $this->routeMatch->getRawParameters()->all();
       if ($eca_endpoint_argument_1 === ($given_arguments['eca_endpoint_argument_1'] ?? NULL) && $eca_endpoint_argument_2 === ($given_arguments['eca_endpoint_argument_2'] ?? NULL)) {
-        // Let ::handle decide whether access is allowed.
+        // Let ::handle decide whether access is allowed. It makes that
+        // decision anew on every request, by dispatching the
+        // "eca_endpoint:access" event to the ECA models. Their verdict may
+        // depend on anything at all, for example on the time of day, on a
+        // field value, on state or on a remote service, and none of that is
+        // expressed by the cache contexts below. Those contexts are still
+        // correct, they are just not sufficient on their own: without a zero
+        // max age, the very first verdict would be stored and replayed, and
+        // ::handle would never get to re-decide. Therefore disable caching on
+        // this dynamically determined access.
+        //
+        // The cacheability built here deliberately differs from the one built
+        // at the bottom of this method: this branch decides nothing and only
+        // describes the request it defers, whereas the branch below carries
+        // the verdict of the ECA models and therefore also the cacheability
+        // those models raised. The asymmetry is intentional, not an oversight.
+        //
+        // @see https://git.drupalcode.org/project/eca/-/work_items/3590449
         return AccessResult::allowed()
           ->addCacheContexts([
             'url.path',
             'url.query_args',
             'user',
             'user.permissions',
-          ]);
+          ])
+          ->mergeCacheMaxAge(0);
       }
     }
 
@@ -279,11 +298,38 @@ final class EndpointController {
     }
 
     $forbidden = AccessResult::forbidden("No ECA configuration set an access result");
-    $event = $this->triggerEvent->dispatchFromPlugin('eca_endpoint:access', $path_arguments, $account, $forbidden);
-    if ($event instanceof AccessEventInterface && ($result = $event->getAccessResult())) {
-      return $result;
+    $render_context = new RenderContext();
+    $triggerEvent = $this->triggerEvent;
+    $event = $this->renderer->executeInRenderContext($render_context, static function () use (&$path_arguments, $account, $forbidden, $triggerEvent) {
+      // ECA may use parts of the rendering system to evaluate access, such as
+      // token replacement. Cacheability metadata coming from there need to be
+      // collected, by wrapping the event dispatching with a render context.
+      return $triggerEvent->dispatchFromPlugin('eca_endpoint:access', $path_arguments, $account, $forbidden);
+    });
+
+    $result = $forbidden;
+    if ($event instanceof AccessEventInterface && ($event_result = $event->getAccessResult())) {
+      $result = $event_result;
     }
-    return $forbidden;
+    if ($result instanceof RefinableCacheableDependencyInterface) {
+      // If available, add the cacheability metadata from the render context.
+      if (!$render_context->isEmpty()) {
+        $result->addCacheableDependency($render_context->pop());
+      }
+      // Invalidate whenever ECA config changes. The list cache tag is the
+      // right one here, rather than the cache tags of the models that
+      // reacted: a verdict also changes when a model that did not exist yet
+      // starts to react upon the event, and no per-model tag can express
+      // that. It is the same tag that ECA attaches elsewhere when the outcome
+      // depends on which models exist.
+      $result->addCacheTags(['config:eca_list']);
+      // Disable caching on dynamically determined access. The models decide
+      // this verdict anew on every request and may base it on anything at
+      // all, none of which is expressed as a cache context. There is
+      // currently no way for a model to declare what its verdict depends on.
+      $result->mergeCacheMaxAge(0);
+    }
+    return $result;
   }
 
 }

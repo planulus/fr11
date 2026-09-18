@@ -107,7 +107,7 @@ class SetFileDownloadAccessResult extends SetAccessResult {
     $form['headers'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Headers'),
-      '#description' => $this->t('List of HTTP headers.<br>Enter one per line in the format Header-Name:value, or enable YAML format below.<br>Example:<br>Content-Disposition: attachment; filename="config.tar.gz"<br>Origin: https://ecaguide.org/<br>'),
+      '#description' => $this->t('List of HTTP headers.<br />Enter one per line in the format Header-Name:value, or enable YAML format below.<br />Example:<br />Content-Disposition: attachment; filename="config.tar.gz"<br />Origin: https://ecaguide.org/<br />'),
       '#default_value' => $this->configuration['headers'],
       '#states' => [
         'invisible' => [

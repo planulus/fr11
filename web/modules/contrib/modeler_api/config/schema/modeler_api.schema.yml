@@ -55,6 +55,43 @@ model_settings.third_party.modeler_api:
     documentation:
       type: text
       label: Documentation
+    summary:
+      type: label
+      label: Summary
+    recipes:
+      type: sequence
+      label: 'Included recipes'
+      sequence:
+        type: string
+        label: 'Recipe name or path'
+    # A list rather than a map keyed by config name, because a config name
+    # always contains dots and Drupal rejects a dot in any config array key.
+    # @see \Drupal\Core\Config\ConfigBase::validateKeys()
+    config_actions:
+      type: sequence
+      label: 'Config actions'
+      sequence:
+        type: mapping
+        label: 'Actions for one config object'
+        mapping:
+          config:
+            type: string
+            label: 'Config name'
+          actions:
+            type: ignore
+            label: Actions
+    export_config:
+      type: sequence
+      label: 'Additional config to export'
+      sequence:
+        type: string
+        label: 'Config name'
+    modules:
+      type: sequence
+      label: 'Additional required modules'
+      sequence:
+        type: string
+        label: 'Module name'
     tags:
       type: sequence
       label: Changelog

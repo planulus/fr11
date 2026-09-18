@@ -24,9 +24,20 @@ class TemplateFormHooks {
 
   /**
    * Constructs a new TemplateFormHooks object.
+   *
+   * @param \Drupal\modeler_api\TemplateTokenResolver|null $templateTokenResolver
+   *   The template token resolver, or NULL while the Modeler API is not
+   *   installed. That is the case for a site which boots ECA 3 code before
+   *   eca_update_8012() has installed it.
+   * @param \Drupal\eca\PluginManager\Event $eventPluginManager
+   *   The manager for ECA event plugins.
+   * @param \Drupal\Core\Session\AccountProxyInterface $currentUser
+   *   The current user.
+   * @param \Drupal\Core\State\StateInterface $state
+   *   The Drupal state.
    */
   public function __construct(
-    protected TemplateTokenResolver $templateTokenResolver,
+    protected ?TemplateTokenResolver $templateTokenResolver,
     protected Event $eventPluginManager,
     protected AccountProxyInterface $currentUser,
     protected StateInterface $state,
@@ -37,7 +48,7 @@ class TemplateFormHooks {
    */
   #[Hook('form_alter', order: Order::Last)]
   public function formAlter(array &$form, FormStateInterface $form_state): void {
-    if (!isset($form['#form_id']) || !$this->currentUser->hasPermission('modeler api edit eca')) {
+    if ($this->templateTokenResolver === NULL || !isset($form['#form_id']) || !$this->currentUser->hasPermission('modeler api edit eca')) {
       return;
     }
     $templates = $this->state->get('eca.templates', []);

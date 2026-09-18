@@ -75,6 +75,7 @@ class FormAddContainerElement extends FormActionBase {
       '#weight' => -10,
       '#default_value' => $this->configuration['name'],
       '#required' => TRUE,
+      '#eca_token_replacement' => TRUE,
     ];
     $form['optional'] = [
       '#type' => 'checkbox',

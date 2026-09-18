@@ -12,7 +12,12 @@ tags:
 
 Version {{ version }}
 
+{% if has_json %}
+<script>jsonurl="{{ rawid }}.json"</script>
+{% endif %}
+{% if has_bpmn %}
 <script>url='{{ model_filename }}.xml'</script>
+{% endif %}
 {!include/library/viewer.html!}
 
 You can apply this model as a recipe (Drupal 10.3 or later) to your own Drupal site:
@@ -43,7 +48,7 @@ drush cr
     - {{ dependency }}
 {% endfor %}
 {% endfor %}
-{% if events or conditions or action %}
+{% if events or conditions or actions %}
 
 ## Used plugins
 {% if events %}
